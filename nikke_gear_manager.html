@@ -1343,9 +1343,6 @@ function getVerdict(nikke, slot) {
       }
 
       // Recommend A vs B based on weighted efficiency comparison
-      // Exception: don't protect Essential lines at very low tiers (T1-T3) — they're barely above a fresh roll
-      const sacrificingEssential = toReset.some(l => classifyLine(l.stat, nikke) === 'essential' && l.tier && l.tier >= 4);
-      // Compare effective weighted gain: Option A vs Option B using DPS-weighted values
       // For Option A: we're keeping/upgrading existing lines, so count OTHER ammo lines (not this one)
       const gainAWeighted = gainADetails.reduce((s, x) => {
         let w = getStatDmgWeight(x.stat, nikke.name, nikke);
@@ -1366,8 +1363,8 @@ function getVerdict(nikke, slot) {
       // Efficiency comparison: DPS-weighted gain per rock
       const effA = (resetRocks + fishRocksA) > 0 ? gainAWeighted / (resetRocks + fishRocksA) : 0;
       const effB = fishRocksB > 0 ? gainBDps / fishRocksB : 0;
-      // Prefer B if it's more efficient AND we're not sacrificing a high-tier Essential line
-      const recommendA = sacrificingEssential || toReset.some(l => l.tier && l.tier >= 9) || effA >= effB;
+      // Prefer A if it's more efficient per rock in DPS terms
+      const recommendA = effA >= effB;
 
       return {
         label: goodLines.length >= 2
