@@ -958,7 +958,7 @@ function renderOverview() {
   rankings.sort((a, b) => b.efficiency - a.efficiency);
 
   // Raid selector dropdown
-  const raidOpts = [...state.raids].reverse().map(r => { const dn = `${r.season ? 'Season ' + r.season + ' Â· ' : ''}${r.name}${r.element ? ' — ' + r.element : ''}`; return `<option value="${r.id}" ${state.selRaid === r.id ? 'selected' : ''}>${dn}</option>`; }).join('');
+  const raidOpts = [...state.raids].reverse().map(r => { const dn = `${r.season ? 'Season ' + r.season + ' · ' : ''}${r.name}${r.element ? ' — ' + r.element : ''}`; return `<option value="${r.id}" ${state.selRaid === r.id ? 'selected' : ''}>${dn}</option>`; }).join('');
   const raidSelector = state.raids.length ? `
     <select class="form-input" style="font-size:12px;padding:3px 8px;width:auto;display:inline-block;margin-left:8px" onchange="selectRaidFilter(this.value)">
       <option value="">All Nikkes</option>${raidOpts}
@@ -1068,7 +1068,7 @@ function renderRoster() {
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div style="display:flex;align-items:center;gap:10px;min-width:0">
           ${nikkeIcon(n.name, 44)}
-          <div style="min-width:0"><div class="nikke-name">${n.name}</div><div class="nikke-meta">${n.element || ''} Â· B${burstNum(n.burst)}</div></div>
+          <div style="min-width:0"><div class="nikke-name">${n.name}</div><div class="nikke-meta">${n.element || ''} · B${burstNum(n.burst)}</div></div>
         </div>
         <button class="del-btn" onclick="requestDelete('${n.id}')" title="Remove">âœ•</button>
       </div>
@@ -1085,7 +1085,7 @@ function renderRoster() {
   const addedNames = new Set(state.nikkes.map(n => n.name));
   const options = NIKKE_DATABASE
     .filter(n => !addedNames.has(n.name))
-    .map(n => `<option value="${n.name}">${n.name} Â· ${n.element} Â· B${burstNum(n.burst)}</option>`)
+    .map(n => `<option value="${n.name}">${n.name} · ${n.element} · B${burstNum(n.burst)}</option>`)
     .join('');
 
   el.innerHTML = `
@@ -1129,7 +1129,7 @@ function filterNikkeList() {
   const filtered = NIKKE_DATABASE
     .filter(n => !addedNames.has(n.name) && n.name.toLowerCase().includes(q));
   sel.innerHTML = filtered
-    .map(n => `<option value="${n.name}">${n.name} Â· ${n.element} Â· B${burstNum(n.burst)}</option>`)
+    .map(n => `<option value="${n.name}">${n.name} · ${n.element} · B${burstNum(n.burst)}</option>`)
     .join('');
 }
 
@@ -1207,7 +1207,7 @@ function renderGear() {
     const addedNames = new Set(state.nikkes.map(n => n.name));
     const addOptions = NIKKE_DATABASE
       .filter(n => !addedNames.has(n.name))
-      .map(n => `<option value="${n.name}">${n.name} Â· ${n.element} Â· B${burstNum(n.burst)}</option>`)
+      .map(n => `<option value="${n.name}">${n.name} · ${n.element} · B${burstNum(n.burst)}</option>`)
       .join('');
     const addHtml = `<button class="add-line-btn" onclick="showGearAddForm()" style="margin-top:6px;width:100%">+ Add Nikke</button>
       <div id="gear-add-form" class="form-panel" style="max-width:100%;margin-top:6px">
@@ -1264,7 +1264,7 @@ function filterGearNikkeList() {
   const filtered = NIKKE_DATABASE
     .filter(n => !addedNames.has(n.name) && n.name.toLowerCase().includes(q));
   sel.innerHTML = filtered
-    .map(n => `<option value="${n.name}">${n.name} Â· ${n.element} Â· B${burstNum(n.burst)}</option>`)
+    .map(n => `<option value="${n.name}">${n.name} · ${n.element} · B${burstNum(n.burst)}</option>`)
     .join('');
 }
 
@@ -1367,7 +1367,7 @@ function renderGearMain(nikke) {
     const sc   = scorePiece(nikke, slot);
 
     const badge = sc
-      ? `<span style="font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;background:${v.cls==='v-keep'?'#052e16':v.cls==='v-ok'?'#3f2a06':'#3f1010'};color:${v.cls==='v-keep'?'#4ade80':v.cls==='v-ok'?'#fcd34d':'#f87171'}">${sc.good} good Â· ${sc.trash} trash</span>`
+      ? `<span style="font-size:11px;padding:2px 8px;border-radius:5px;font-weight:600;background:${v.cls==='v-keep'?'#052e16':v.cls==='v-ok'?'#3f2a06':'#3f1010'};color:${v.cls==='v-keep'?'#4ade80':v.cls==='v-ok'?'#fcd34d':'#f87171'}">${sc.good} good · ${sc.trash} trash</span>`
       : `<span style="font-size:11px;color:#334155">Not entered</span>`;
 
     const lineBoxes = gear.lines.map((line, i) => {
@@ -1423,18 +1423,18 @@ function renderGearMain(nikke) {
       if (v.options) {
         const rec = v.options.find(o => o.recommended) || v.options[0];
         const recName = rec.title.includes('Reset') ? 'Reset' : 'Change Effects';
-        const summary = `${rankBadge}${v.label} — ${recName} ~${rec.rocks} rocks Â· ${rec.gain}`;
+        const summary = `${rankBadge}${v.label} — ${recName} ~${rec.rocks} rocks · ${rec.gain}`;
         verdictHtml = `<details class="verdict ${v.cls}">
           <summary class="verdict-title">${summary}</summary>
           ${v.options.map(opt => `
             <div class="verdict-option" style="${opt.recommended ? 'border-left:3px solid currentColor' : ''}">
               <div class="verdict-option-title">${opt.title}${opt.recommended ? '<span class="recommended-badge">Recommended</span>' : ''}</div>
               <div class="verdict-steps">${opt.steps.map((s, si) => `<div class="verdict-step"><span class="step-num">${si + 1}.</span><span>${s}</span></div>`).join('')}</div>
-              <span class="rock-est">~${opt.rocks} rocks Â· ${opt.gain}</span>
+              <span class="rock-est">~${opt.rocks} rocks · ${opt.gain}</span>
             </div>`).join('')}
         </details>`;
       } else {
-        const gainText = v.gain ? ` Â· ${v.gain}` : '';
+        const gainText = v.gain ? ` · ${v.gain}` : '';
         const summary = v.rocks > 0
           ? `${rankBadge}${v.label} — ~${v.rocks} rocks${gainText}`
           : `${rankBadge}${v.label}`;
@@ -1464,7 +1464,7 @@ function renderGearMain(nikke) {
         ${nikkeIcon(nikke.name, 34)}
         <div>
           <div style="font-size:14px;font-weight:600;color:#f1f5f9">${nikke.name}</div>
-          <div style="font-size:11px;color:#64748b">${nikke.element || ''} Â· B${burstNum(nikke.burst)}</div>
+          <div style="font-size:11px;color:#64748b">${nikke.element || ''} · B${burstNum(nikke.burst)}</div>
         </div>
       </div>
       <label class="elemental-toggle" title="Include Elemental Damage in gain calculations">
@@ -1714,8 +1714,8 @@ function renderPrioMain(nikke) {
         <select class="tier-target-select" onchange="updatePrioTargetTier('${nikke.id}',${i},this.value)">${tTierOpts}</select>
         <button class="small-del-btn" onclick="delPrio('${nikke.id}',${i})" title="Remove">âœ•</button>
       </div>
-      ${tgtVal ? `<div class="prio-hint">T${targetTier}+ for ${p.line || 'stat'}: â‰¥<strong>${tgtVal}%</strong> Â· ${(prob * 100).toFixed(0)}% chance per reset roll (~${expRolls} rolls expected)</div>` : ''}
-      ${p.line && (p.line in MIN_VAL) ? `<div class="prio-hint">Prydwen min per line: ${MIN_VAL[p.line]}% Â· Total min for ${count}Ã—: ${(MIN_VAL[p.line] * count).toFixed(2)}%</div>` : ''}
+      ${tgtVal ? `<div class="prio-hint">T${targetTier}+ for ${p.line || 'stat'}: â‰¥<strong>${tgtVal}%</strong> · ${(prob * 100).toFixed(0)}% chance per reset roll (~${expRolls} rolls expected)</div>` : ''}
+      ${p.line && (p.line in MIN_VAL) ? `<div class="prio-hint">Prydwen min per line: ${MIN_VAL[p.line]}% · Total min for ${count}Ã—: ${(MIN_VAL[p.line] * count).toFixed(2)}%</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1774,7 +1774,7 @@ function renderRaids() {
   const el = document.getElementById('raids');
   const sortedRaids = [...state.raids].reverse();
   const raidList = sortedRaids.map(r => {
-    const displayName = `${r.season ? 'Season ' + r.season + ' Â· ' : ''}${r.name}${r.element ? ' — ' + elemIcon(r.element) + ' ' + r.element : ''}`;
+    const displayName = `${r.season ? 'Season ' + r.season + ' · ' : ''}${r.name}${r.element ? ' — ' + elemIcon(r.element) + ' ' + r.element : ''}`;
     return `<div class="nikke-item ${state.selRaidEdit === r.id ? 'active' : ''}" onclick="selRaidEdit('${r.id}')">
       ${displayName}
       <div class="nikke-item-sub">${r.entries.length} Nikke${r.entries.length !== 1 ? 's' : ''}</div>
@@ -1870,7 +1870,7 @@ function saveEditRaid(id) {
 
 function renderRaidMain(raid) {
   const area = document.getElementById('raid-main');
-  const raidDisplayName = `${raid.season ? 'Season ' + raid.season + ' Â· ' : ''}${raid.name}${raid.element ? ' — ' + elemIcon(raid.element) + ' ' + raid.element + ' Weak' : ''}`;
+  const raidDisplayName = `${raid.season ? 'Season ' + raid.season + ' · ' : ''}${raid.name}${raid.element ? ' — ' + elemIcon(raid.element) + ' ' + raid.element + ' Weak' : ''}`;
   const viewMode = state.raidViewMode || 'damage'; // 'teams' or 'damage'
 
   // Sort unassigned entries by damage
@@ -2006,7 +2006,7 @@ function renderRaidMain(raid) {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <div style="display:flex;align-items:center;gap:8px">
         <span id="raid-title-display" style="font-size:14px;font-weight:600;color:#f1f5f9">${raidDisplayName}</span>
-        <button class="btn-sm" onclick="showEditRaid('${raid.id}')" title="Edit raid" style="font-size:10px;padding:2px 6px">âœŽ</button>
+        <button class="btn-sm" onclick="showEditRaid('${raid.id}')" title="Edit raid" style="font-size:10px;padding:2px 6px">✎</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:11px;color:#64748b">Total: <strong style="color:#f1f5f9">${totalDmg ? totalDmg.toLocaleString() + 'M' : '—'}</strong></span>
