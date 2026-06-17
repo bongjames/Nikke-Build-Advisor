@@ -525,6 +525,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
     <div style="display:flex;flex-direction:column;gap:12px;margin:1.2rem 0">
       <button class="btn btn-primary" onclick="exportData();dismissMyData()" style="width:100%;padding:12px;font-size:14px">⬇ Backup My Data<br><span style="font-size:11px;opacity:0.7">Download a file with all your Nikkes &amp; gear</span></button>
       <button class="btn btn-primary" onclick="document.getElementById('import-file').click();dismissMyData()" style="width:100%;padding:12px;font-size:14px;background:#1e40af">⬆ Restore My Data<br><span style="font-size:11px;opacity:0.7">Load a previously saved backup file</span></button>
+      <button class="btn" onclick="clearAllData()" style="width:100%;padding:12px;font-size:14px;background:#7f1d1d;border-color:#b91c1c;color:#fecaca">🗑 Clear All Data<br><span style="font-size:11px;opacity:0.7">Permanently delete all Nikkes &amp; gear</span></button>
     </div>
     <div class="tut-actions">
       <button class="btn btn-sm" onclick="dismissMyData()">Close</button>
@@ -2482,6 +2483,18 @@ function showMyData() {
 }
 function dismissMyData() {
   document.getElementById('mydata-overlay').classList.remove('show');
+}
+function clearAllData() {
+  const count = state.nikkes.length;
+  const cloudNote = currentUser
+    ? '\n\nThis will also wipe your synced cloud data.'
+    : '';
+  if (!confirm(`⚠ Delete ALL data?\n\nThis permanently removes ${count} Nikke(s) and all their gear, raid teams, and settings. This cannot be undone.${cloudNote}\n\nConsider backing up first.`)) return;
+  if (!confirm('Are you absolutely sure? There is no way to recover this data.')) return;
+  state = { nikkes: [], selGear: null, selPrio: null, elementalBoss: true, raids: [], selRaid: null, selRaidEdit: null, rankSort: 'efficiency', rankSortAsc: false, gearElementFilter: '' };
+  save();
+  render();
+  dismissMyData();
 }
 document.getElementById('mydata-overlay').addEventListener('click', function(e) {
   if (e.target === this) dismissMyData();
