@@ -15,18 +15,18 @@
   DATA MODEL
   ----------
   state.nikkes[]
-    â””â”€â”€ id, name, burst, element
-    â””â”€â”€ gear { Helmet, Chest, Gloves, Boots }
-          â””â”€â”€ lines[3] { stat, val, locked }
-    â””â”€â”€ priorities[]
-          â””â”€â”€ { line, tier, count, targetTier }
+    └── id, name, burst, element
+    └── gear { Helmet, Chest, Gloves, Boots }
+          └── lines[3] { stat, val, locked }
+    └── priorities[]
+          └── { line, tier, count, targetTier }
 
   KEY GAME RULES BAKED IN
   -----------------------
   1. Line appearance rates:  Line 1 = 100%, Line 2 = 50%, Line 3 = 30%
   2. No duplicate stats on the same gear piece
   3. Stat pool renormalizes when stats are already on a piece
-  4. Tier probability:  T1â€“5 = 12% each, T6â€“10 = 7% each, T11â€“15 = 1% each
+  4. Tier probability:  T1–5 = 12% each, T6–10 = 7% each, T11–15 = 1% each
   5. Lock before reset — never reset an unlocked high-value line
   6. T12+ lines auto-flag for immediate locking
   7. Reroll cost = locked lines + 1 rock per roll
@@ -42,16 +42,16 @@
   ROCK COST FORMULAS
   ------------------
   Change Effects expected rocks:
-    P(good stat on line i) = lineAppear[i] Ã— goodFraction
-    P(at least one good on any unlocked line) = 1 - âˆ(1 - P_i)
+    P(good stat on line i) = lineAppear[i] × goodFraction
+    P(at least one good on any unlocked line) = 1 - ∏(1 - P_i)
     expectedRolls = 1 / P(at least one good)
-    rocks = expectedRolls Ã— (lockedCount + 1)
+    rocks = expectedRolls × (lockedCount + 1)
 
   Reset Attributes expected rocks (per line, locking after each hit):
     For each remaining good unlocked line:
       P(hit target) = sum of TIER_PROB[targetTier..15]
       P(at least one of N lines hits) = 1 - (1 - P)^N
-      rocks += round(1/P) Ã— (lockedCount + 1)
+      rocks += round(1/P) × (lockedCount + 1)
       lockedCount++
 
   STORAGE
@@ -61,7 +61,7 @@
 ============================================================ -->
 
 <style>
-/* â”€â”€ Reset & base â”€â”€ */
+/* ── Reset & base ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
@@ -71,7 +71,7 @@ body {
   min-height: 100vh;
 }
 
-/* â”€â”€ Layout â”€â”€ */
+/* ── Layout ── */
 .app { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem; zoom: 1.15; }
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -85,7 +85,7 @@ body {
   padding: 3px 10px; border-radius: 6px; font-weight: 500;
 }
 
-/* â”€â”€ Tabs â”€â”€ */
+/* ── Tabs ── */
 .tabs {
   display: flex; gap: 2px; margin-bottom: 1.5rem;
   border-bottom: 1px solid #1e2535;
@@ -100,7 +100,7 @@ body {
 .section { display: none; }
 .section.active { display: block; }
 
-/* â”€â”€ Two-column panel â”€â”€ */
+/* ── Two-column panel ── */
 .two-col { display: grid; grid-template-columns: 210px 1fr; gap: 14px; }
 .nikke-list { display: flex; flex-direction: column; gap: 4px; max-height: 70vh; overflow-y: auto; overflow-x: hidden; }
 .nikke-list::-webkit-scrollbar { width: 6px; }
@@ -117,7 +117,7 @@ body {
 .nikke-item.active { background: #1a2235; border-color: #2d3f5e; }
 .nikke-item-sub { font-size: 11px; color: #64748b; margin-top: 2px; font-weight: 400; }
 
-/* â”€â”€ Roster â”€â”€ */
+/* ── Roster ── */
 .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 1rem; }
 .nikke-card {
   background: #151c2b; border: 1px solid #1e2535;
@@ -138,7 +138,7 @@ body {
 }
 .add-nikke-btn:hover { background: #1a2235; }
 
-/* â”€â”€ Delete confirm â”€â”€ */
+/* ── Delete confirm ── */
 .del-btn {
   font-size: 12px; background: none; border: none; color: #475569;
   cursor: pointer; padding: 2px 5px; border-radius: 4px; line-height: 1;
@@ -155,7 +155,7 @@ body {
 .del-confirm-yes { font-size: 11px; font-weight: 600; background: #ef4444; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
 .del-confirm-no  { font-size: 11px; background: none; border: 1px solid #2d3f5e; border-radius: 4px; padding: 2px 8px; cursor: pointer; color: #94a3b8; }
 
-/* â”€â”€ Gear slot cards â”€â”€ */
+/* ── Gear slot cards ── */
 .slot-card {
   background: #151c2b; border: 1px solid #1e2535;
   border-radius: 10px; padding: .9rem; margin-bottom: 8px;
@@ -223,7 +223,7 @@ body {
 .warn-text  { font-size: 10px; color: #ef4444; }
 .below-text { font-size: 10px; color: #f59e0b; }
 
-/* â”€â”€ Verdict box â”€â”€ */
+/* ── Verdict box ── */
 .verdict {
   margin-top: 9px; padding: 10px 12px; border-radius: 8px;
   font-size: 12px; line-height: 1.6;
@@ -232,7 +232,7 @@ body {
 .v-ok     { background: #3f2a06; border: 1px solid #92400e; color: #fcd34d; }
 .v-reroll { background: #3f1010; border: 1px solid #991b1b; color: #fca5a5; }
 .verdict-title { font-weight: 700; font-size: 13px; margin-bottom: 7px; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
-.verdict-title::before { content: 'â–¶'; font-size: 9px; transition: transform 0.15s; }
+.verdict-title::before { content: '▶'; font-size: 9px; transition: transform 0.15s; }
 details[open] > .verdict-title::before { transform: rotate(90deg); }
 .verdict-title::-webkit-details-marker { display: none; }
 .verdict-option {
@@ -253,7 +253,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
   padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
 }
 
-/* â”€â”€ Attribute summary table â”€â”€ */
+/* ── Attribute summary table ── */
 .attr-summary {
   margin-bottom: 10px; background: #151c2b;
   border: 1px solid #1e2535; border-radius: 10px; padding: .9rem;
@@ -274,7 +274,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 .unmet { color: #f87171; font-weight: 600; }
 .no-min { color: #475569; }
 
-/* â”€â”€ Priority tab â”€â”€ */
+/* ── Priority tab ── */
 .prio-card {
   background: #151c2b; border: 1px solid #1e2535;
   border-radius: 10px; padding: .9rem; margin-bottom: 8px;
@@ -299,7 +299,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 .small-del-btn { font-size: 12px; background: none; border: none; color: #475569; cursor: pointer; padding: 2px 4px; border-radius: 3px; }
 .small-del-btn:hover { color: #ef4444; }
 
-/* â”€â”€ Overview â”€â”€ */
+/* ── Overview ── */
 .ov-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 1.5rem; }
 .metric-card { background: #151c2b; border: 1px solid #1e2535; border-radius: 10px; padding: .9rem; text-align: center; }
 .metric-val   { font-size: 24px; font-weight: 700; margin-bottom: 3px; color: #f1f5f9; }
@@ -316,7 +316,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 .p-passable  { background: #3f2a06; color: #fbbf24; }
 .p-unmet     { background: #3f1010; color: #f87171; }
 
-/* â”€â”€ Forms â”€â”€ */
+/* ── Forms ── */
 .form-panel {
   display: none; max-width: 320px; background: #151c2b;
   border: 1px solid #1e2535; border-radius: 10px;
@@ -355,7 +355,7 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 .btn-sm:hover { background: #1a2235; color: #f1f5f9; }
 .btn-sm.active-sort { background: #1e3a5f; color: #60a5fa; border-color: #3b82f6; }
 
-/* â”€â”€ Raid Teams Drag & Drop â”€â”€ */
+/* ── Raid Teams Drag & Drop ── */
 .raid-teams-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
 .raid-team-lane { background: #151c2b; border: 1px solid #1e2535; border-radius: 8px; padding: 8px; }
 .raid-team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -508,7 +508,7 @@ function attrTotals(nikke) {
 }
 
 // Minimum total value expected across all 4 gear pieces
-// = priority count Ã— per-line minimum
+// = priority count × per-line minimum
 function minTotalVal(nikke, stat) {
   if (!(stat in MIN_VAL)) return null;
   const p = nikke.priorities.find(p => p.line === stat);
@@ -793,7 +793,7 @@ function migrateState() {
   }
 }
 
-// â”€â”€ Export / Import â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Export / Import ──────────────────────────────────────────
 function exportData() {
   const json = JSON.stringify(state, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -977,7 +977,7 @@ function renderOverview() {
     rankings.sort((a, b) => asc * (a.efficiency - b.efficiency));
   }
 
-  const sortArrow = (col) => sortBy === col ? (state.rankSortAsc ? ' â–²' : ' â–¼') : '';
+  const sortArrow = (col) => sortBy === col ? (state.rankSortAsc ? ' ▲' : ' ▼') : '';
   const rankingHtml = rankings.length ? (() => {
     const top10 = rankings.slice(0, 10);
     const next10 = rankings.slice(10, 20);
@@ -991,7 +991,7 @@ function renderOverview() {
         <td style="font-weight:700;color:${selRaid ? (r.efficiency >= 0.5 ? '#4ade80' : r.efficiency >= 0.1 ? '#fbbf24' : '#f87171') : (r.efficiency >= 1 ? '#4ade80' : r.efficiency >= 0.3 ? '#fbbf24' : '#f87171')}">${selRaid ? r.efficiency.toFixed(2) + 'M/rock' : r.efficiency.toFixed(3) + '%/rock'}</td>
       </tr>`;
     const toggleBtn = next10.length ? `<tr id="rank-toggle-row"><td colspan="99" style="text-align:center;padding:8px">
-      <button class="btn-sm" onclick="var el=document.getElementById('rank-next10');var btn=this;if(el.style.display==='none'){el.style.display='';btn.textContent='Hide #11â€“${Math.min(20, rankings.length)} â–²'}else{el.style.display='none';btn.textContent='Show next 10 â–¼'}">Show next 10 â–¼</button>
+      <button class="btn-sm" onclick="var el=document.getElementById('rank-next10');var btn=this;if(el.style.display==='none'){el.style.display='';btn.textContent='Hide #11–${Math.min(20, rankings.length)} ▲'}else{el.style.display='none';btn.textContent='Show next 10 ▼'}">Show next 10 ▼</button>
     </td></tr>` : '';
     const next10Rows = next10.length ? `<tbody id="rank-next10" style="display:none">${next10.map((r, i) => renderRow(r, i + 10)).join('')}</tbody>` : '';
     return `<div class="section-label" style="margin-top:1.5rem">Rock efficiency ranking${raidSelector} <span style="font-size:10px;color:#475569;font-weight:400">(${selRaid ? 'damage gain per rock' : 'gain% per rock'}, higher = better)</span></div>
@@ -1403,7 +1403,7 @@ function renderGearMain(nikke) {
           ${unit ? `<span class="value-unit">${unit}</span>` : ''}
           ${tb ? `<span class="tier-badge ${tb.cls}">${tb.label}</span>` : ''}
         </div>
-        ${line.stat && line.val && !aboveMin ? `<div class="warn-text">âš  Below min ${MIN_VAL[line.stat]}%</div>` : ''}
+        ${line.stat && line.val && !aboveMin ? `<div class="warn-text">⚠ Below min ${MIN_VAL[line.stat]}%</div>` : ''}
         ${line.stat && line.val && aboveMin && !atTarget && isGoodLine(cls) ? `<div class="below-text">Below target T${targetTier}</div>` : ''}
         <button class="lock-btn ${line.locked ? 'locked' : ''}"
           onclick="toggleLock('${nikke.id}','${slot}',${i})"
@@ -1476,7 +1476,7 @@ function renderGearMain(nikke) {
     ${slots}`;
 }
 
-// â”€â”€ Bulk Paste â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Bulk Paste ──────────────────────────────────────────────
 // Parses text like:
 //   ATK 10.40
 //   Elemental Damage 20.75
@@ -1715,7 +1715,7 @@ function renderPrioMain(nikke) {
         <button class="small-del-btn" onclick="delPrio('${nikke.id}',${i})" title="Remove">✕</button>
       </div>
       ${tgtVal ? `<div class="prio-hint">T${targetTier}+ for ${p.line || 'stat'}: ≥<strong>${tgtVal}%</strong> · ${(prob * 100).toFixed(0)}% chance per reset roll (~${expRolls} rolls expected)</div>` : ''}
-      ${p.line && (p.line in MIN_VAL) ? `<div class="prio-hint">Prydwen min per line: ${MIN_VAL[p.line]}% · Total min for ${count}Ã—: ${(MIN_VAL[p.line] * count).toFixed(2)}%</div>` : ''}
+      ${p.line && (p.line in MIN_VAL) ? `<div class="prio-hint">Prydwen min per line: ${MIN_VAL[p.line]}% · Total min for ${count}×: ${(MIN_VAL[p.line] * count).toFixed(2)}%</div>` : ''}
     </div>`;
   }).join('');
 
@@ -1905,7 +1905,7 @@ function renderRaidMain(raid) {
   let bodyHtml = '';
 
   if (viewMode === 'teams') {
-    // â”€â”€ TEAMS VIEW: drag-and-drop â”€â”€
+    // ── TEAMS VIEW: drag-and-drop ──
     const maxEntryDmg = Math.max(...raid.entries.map(e => e.damage || 0), 1);
 
     function renderChip(e) {
@@ -1949,7 +1949,7 @@ function renderRaidMain(raid) {
     const unassigned = teams[0] || [];
     const unassignedChips = unassigned.map(renderChip).join('');
     const sortBtns = `<div style="display:flex;gap:4px;margin-left:auto">
-      <button class="btn-sm${sortMode === 'damage' ? ' active-sort' : ''}" onclick="setRaidSort2('damage')" style="font-size:9px;padding:1px 5px">Dmg â†“</button>
+      <button class="btn-sm${sortMode === 'damage' ? ' active-sort' : ''}" onclick="setRaidSort2('damage')" style="font-size:9px;padding:1px 5px">Dmg ↓</button>
       <button class="btn-sm${sortMode === 'default' ? ' active-sort' : ''}" onclick="setRaidSort2('default')" style="font-size:9px;padding:1px 5px">Order</button>
     </div>`;
 
@@ -1964,7 +1964,7 @@ function renderRaidMain(raid) {
         <div class="raid-team-drop raid-unassigned-drop" data-team="0" data-raid-id="${raid.id}">${unassignedChips}${!unassigned.length ? '<div class="raid-drop-hint">All Nikkes assigned!</div>' : ''}</div>
       </div>`;
   } else {
-    // â”€â”€ DAMAGE VIEW: flat ranked list â”€â”€
+    // ── DAMAGE VIEW: flat ranked list ──
     const sorted = raid.entries.map((e, i) => ({ ...e, origIdx: i }))
       .sort((a, b) => (b.damage || 0) - (a.damage || 0));
 
@@ -2210,7 +2210,7 @@ function renderWeights() {
       <td><input type="number" step="0.01" min="0" max="1" class="value-input" style="width:70px"
         value="${val}" onchange="updateAmmoDiminish(${i}, this.value)"></td>
       <td style="font-size:10px;color:#475569">${AMMO_DIMINISH_DEFAULT[i]}</td>
-      <td style="font-size:10px;color:#475569">Ã—${val} = effective weight is ${(val * 100).toFixed(0)}% of base</td>
+      <td style="font-size:10px;color:#475569">×${val} = effective weight is ${(val * 100).toFixed(0)}% of base</td>
     </tr>`;
   }).join('');
 
