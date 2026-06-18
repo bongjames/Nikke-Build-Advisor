@@ -363,16 +363,27 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 /* ── Raid Teams Drag & Drop ── */
 .raid-teams-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 12px; }
 .raid-team-lane { background: #151c2b; border: 1px solid #1e2535; border-radius: 8px; padding: 8px; }
-.raid-team-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.raid-team-label { font-size: 13px; font-weight: 700; color: #60a5fa; }
-.raid-team-total { font-size: 13px; font-weight: 700; color: #4ade80; }
+.raid-team-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; min-height: 28px; }
+.raid-team-label { font-size: 14px; font-weight: 700; color: #60a5fa; white-space: nowrap; }
+.raid-team-total { font-size: 14px; font-weight: 700; color: #4ade80; white-space: nowrap; flex-shrink: 0; }
 .raid-team-note {
-  width: 100%; margin-top: 6px; font-size: 13px; padding: 6px 8px;
-  background: #0f1117; border: 1px solid #2d3f5e; border-radius: 5px;
-  color: #e2e8f0; transition: border-color 0.1s;
+  width: 100%; font-size: 13px; padding: 5px 28px 5px 10px;
+  background: #0f172a; border: 1px solid #475569; border-radius: 5px;
+  color: #ffffff; font-weight: 500; transition: border-color 0.1s;
 }
-.raid-team-note:hover { border-color: #3b82f6; }
-.raid-team-note:focus { border-color: #3b82f6; outline: none; }
+.raid-team-note::placeholder { color: #64748b; font-weight: 400; font-style: italic; }
+.raid-team-note:hover { border-color: #60a5fa; background: #1a2236; }
+.raid-team-note:focus { border-color: #60a5fa; outline: none; background: #1a2236; color: #ffffff; }
+.raid-note-wrap { position: relative; flex: 1; min-width: 0; }
+.raid-note-clear {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; border-radius: 3px;
+  color: #64748b; font-size: 14px; font-weight: 700; line-height: 1;
+  cursor: pointer; transition: all 0.1s;
+}
+.raid-note-clear:hover { background: #7f1d1d; color: #fca5a5; }
 .raid-team-drop { min-height: 36px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; padding: 6px; border-radius: 6px; border: 1px dashed #2d3f5e; transition: all 0.15s; }
 .raid-team-drop.drag-active { border-color: #3b82f6; }
 .raid-team-drop.drag-over { background: rgba(59,130,246,0.08); border-color: #60a5fa; }
@@ -381,13 +392,21 @@ details[open] > .verdict-title::before { transform: rotate(90deg); }
 .raid-unassigned-drop { min-height: 40px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 .raid-chip {
   display: flex; flex-direction: row; align-items: center; gap: 8px;
-  padding: 6px 10px; width: 100%;
+  padding: 6px 10px; width: 100%; position: relative;
   background: #1a2235; border: 1px solid #2d3f5e; border-radius: 8px;
   cursor: grab; color: #e2e8f0; user-select: none;
   transition: opacity 0.1s, box-shadow 0.1s;
 }
 .raid-chip:hover { border-color: #3b82f6; }
 .raid-chip.dragging { opacity: 0.4; }
+.raid-chip-remove {
+  margin-left: auto; flex-shrink: 0; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  background: #1e293b; border: 1px solid #475569; border-radius: 4px;
+  color: #94a3b8; font-size: 14px; font-weight: 700; line-height: 1;
+  cursor: pointer; transition: all 0.1s;
+}
+.raid-chip-remove:hover { background: #7f1d1d; border-color: #f87171; color: #fca5a5; }
 .raid-chip-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .raid-chip-name { font-weight: 600; font-size: 12px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .raid-chip-meta { display: flex; align-items: center; gap: 4px; }
@@ -993,6 +1012,8 @@ function load() {
   // Default to latest raid (last in array = displayed first in sidebar)
   state.selRaid = state.raids.length ? state.raids[state.raids.length - 1].id : null;
   state.selRaidEdit = state.raids.length ? state.raids[state.raids.length - 1].id : null;
+  // Always default Solo Raids view to Damage on reload
+  state.raidViewMode = 'damage';
   // Save to localStorage only (auth listener handles cloud sync)
   try { localStorage.setItem('nikke_v8', JSON.stringify(state)); } catch(e) {}
 }
@@ -2313,12 +2334,15 @@ function renderRaidMain(raid) {
       const elem = n && n.element ? elemIcon(n.element) : '';
       const pct = maxEntryDmg > 0 ? ((e.damage || 0) / maxEntryDmg * 100) : 0;
       const dmgColor = !e.damage ? '#64748b' : pct >= 80 ? '#4ade80' : pct >= 50 ? '#60a5fa' : pct >= 25 ? '#fbbf24' : '#f87171';
+      const isAssigned = (e.team || 0) !== 0;
+      const removeBtn = isAssigned ? `<button class="raid-chip-remove" onclick="event.stopPropagation();setRaidTeam('${raid.id}',${e.origIdx},0)" title="Unassign">&times;</button>` : '';
       return `<div class="raid-chip" draggable="true" data-raid-entry="${raid.id}-${e.origIdx}">
         ${n ? nikkeIcon(name, 38) : ''}
         <div class="raid-chip-info">
           <span class="raid-chip-name">${name}</span>
           <div class="raid-chip-meta">${elem}${dmg ? `<span class="raid-chip-dmg-label" style="color:${dmgColor}">${dmg}</span>` : ''}</div>
         </div>
+        ${removeBtn}
       </div>`;
     }
 
@@ -2334,13 +2358,16 @@ function renderRaidMain(raid) {
       const note = (raid.teamNotes && raid.teamNotes[t]) || '';
       return `<div class="raid-team-lane" data-team="${t}" data-raid-id="${raid.id}">
         <div class="raid-team-header">
-          <span class="raid-team-label">Team ${t} <span style="font-size:11px;font-weight:500;color:#64748b;margin-left:4px">${members.length}/5</span></span>
+          <span class="raid-team-label">Team ${t}</span>
           <span class="raid-team-total" style="color:${dmgColor}">${total ? total.toLocaleString() + 'M' : '—'}</span>
+          <div class="raid-note-wrap">
+            <input class="raid-team-note" type="text" placeholder="Notes..." value="${note.replace(/"/g, '&quot;')}"
+              onblur="updateTeamNote('${raid.id}',${t},this.value)"
+              onkeydown="if(event.key==='Enter')this.blur()"/>
+            <button class="raid-note-clear" onclick="clearTeamNote('${raid.id}',${t})" title="Clear note">&times;</button>
+          </div>
         </div>
         <div class="raid-team-drop" data-team="${t}" data-raid-id="${raid.id}">${chips}${!members.length ? '<div class="raid-drop-hint">Drop Nikkes here</div>' : ''}</div>
-        <input class="raid-team-note" type="text" placeholder="Notes..." value="${note.replace(/"/g, '&quot;')}"
-          onblur="updateTeamNote('${raid.id}',${t},this.value)"
-          onkeydown="if(event.key==='Enter')this.blur()"/>
       </div>`;
     }).join('');
 
@@ -2363,10 +2390,22 @@ function renderRaidMain(raid) {
       </div>`;
   } else {
     // ── DAMAGE VIEW: flat ranked list ──
-    const sorted = raid.entries.map((e, i) => ({ ...e, origIdx: i }))
-      .sort((a, b) => (b.damage || 0) - (a.damage || 0));
+    const dmgSortMode = state.raidDmgSortMode || 'damage';
+    const withIdx = raid.entries.map((e, i) => ({ ...e, origIdx: i }));
 
-    const maxDmg = sorted.length ? (sorted[0].damage || 0) : 1;
+    // Compute potential for sorting
+    const potentialMap = {};
+    withIdx.forEach(e => {
+      const n = state.nikkes.find(x => x.id === e.nikkeId);
+      const gainPct = n ? getNikkeTotalGainPct(n) : 0;
+      potentialMap[e.origIdx] = (e.damage && gainPct > 0) ? (gainPct / 100) * e.damage : 0;
+    });
+
+    const sorted = dmgSortMode === 'potential'
+      ? withIdx.sort((a, b) => (potentialMap[b.origIdx] || 0) - (potentialMap[a.origIdx] || 0))
+      : withIdx.sort((a, b) => (b.damage || 0) - (a.damage || 0));
+
+    const maxDmg = sorted.length ? Math.max(...sorted.map(e => e.damage || 0), 1) : 1;
 
     // Pre-compute potential gain (in M) for each entry to determine relative scale
     const potentials = sorted.map(e => {
@@ -2386,6 +2425,7 @@ function renderRaidMain(raid) {
       // Potential damage gain if this nikke's overload gear is improved
       const gainPct = n ? getNikkeTotalGainPct(n) : 0;
       let gainCell;
+      let gainBar = '';
       if (!e.damage || gainPct <= 0) {
         gainCell = '<span style="color:#475569">—</span>';
       } else {
@@ -2393,6 +2433,7 @@ function renderRaidMain(raid) {
         const relPct = maxPotential > 0 ? (gainM / maxPotential * 100) : 0;
         const gainColor = relPct >= 80 ? '#4ade80' : relPct >= 50 ? '#60a5fa' : relPct >= 25 ? '#fbbf24' : '#f87171';
         gainCell = `<span style="color:${gainColor};font-weight:700" title="+${gainPct.toFixed(2)}% from improving overload gear">+${gainM.toFixed(1)}M</span> <span style="font-size:10px;color:${gainColor}">(+${gainPct.toFixed(1)}%)</span>`;
+        gainBar = `<div class="raid-dmg-bar-bg"><div class="raid-dmg-bar" style="width:${relPct.toFixed(1)}%;background:${gainColor}"></div></div>`;
       }
       return `<tr class="rank-row">
         <td style="font-size:11px;color:#475569;width:24px">${rank + 1}</td>
@@ -2409,13 +2450,14 @@ function renderRaidMain(raid) {
         </div></td>
         <td style="width:100px"><div class="raid-dmg-bar-bg"><div class="raid-dmg-bar" style="width:${pct.toFixed(1)}%;background:${barColor}"></div></div></td>
         <td style="width:120px;text-align:right;font-size:12px">${gainCell}</td>
+        <td style="width:80px">${gainBar}</td>
         <td style="width:26px"><button class="small-del-btn" onclick="removeRaidEntry('${raid.id}',${e.origIdx})" title="Remove">✕</button></td>
       </tr>`;
     }).join('');
 
     bodyHtml = `
       <table class="attr-table" style="width:100%">
-        <tr><th>#</th><th>Nikke</th><th>Tm</th><th style="text-align:right">Damage</th><th></th><th style="text-align:right">Potential</th><th></th></tr>
+        <tr><th>#</th><th>Nikke</th><th>Tm</th><th class="sort-header" style="text-align:left" onclick="setRaidDmgSort('damage')">Damage${dmgSortMode === 'damage' ? ' ▼' : ''}</th><th></th><th class="sort-header" style="text-align:left" onclick="setRaidDmgSort('potential')">Potential${dmgSortMode === 'potential' ? ' ▼' : ''}</th><th></th><th></th></tr>
         ${rows}
       </table>`;
   }
@@ -2487,8 +2529,23 @@ function updateTeamNote(raidId, teamNum, value) {
   save();
 }
 
+function clearTeamNote(raidId, teamNum) {
+  const raid = state.raids.find(r => r.id === raidId);
+  if (!raid) return;
+  if (!raid.teamNotes) raid.teamNotes = {};
+  raid.teamNotes[teamNum] = '';
+  save();
+  renderRaidMain(raid);
+}
+
 function setRaidSort2(mode) {
   state.raidSortMode = mode;
+  const raid = state.raids.find(r => r.id === state.selRaidEdit);
+  if (raid) renderRaidMain(raid);
+}
+
+function setRaidDmgSort(mode) {
+  state.raidDmgSortMode = mode;
   const raid = state.raids.find(r => r.id === state.selRaidEdit);
   if (raid) renderRaidMain(raid);
 }
@@ -2775,6 +2832,7 @@ function render() {
   renderGear();
   renderPriority();
   renderRaids();
+  renderWeights();
 }
 
 load();
