@@ -5,6 +5,37 @@
 
 const SLOTS = ["Helmet", "Chest", "Gloves", "Boots"];
 
+// Harmony Cube TID → English name (sourced from game CDN)
+const HARMONY_CUBE_NAMES = {
+  1000301: "Assault Cube",
+  1000303: "Resilience Cube",
+  1000304: "Bastion Cube",
+  1000307: "Quantum Cube",
+};
+
+// Collection Doll TID → English name (sourced from game CDN)
+const COLLECTION_DOLL_NAMES = {
+  100101: "Cooking Commander Doll",
+  100102: "Cooking Commander Doll Ltd.",
+  100201: "Shopping Commander Doll",
+  100202: "Shopping Commander Doll Ltd.",
+  100301: "Exercising Commander Doll",
+  100302: "Exercising Commander Doll Ltd.",
+  100401: "Battling Commander Doll",
+  100402: "Battling Commander Doll Ltd.",
+  100501: "Coffee Commander Doll",
+  100502: "Coffee Commander Doll Ltd.",
+  100601: "Napping Commander Doll",
+  100602: "Napping Commander Doll Ltd.",
+  200401: "Hero Trilogy BD",
+  200601: "Sheet of Paper",
+  200701: "Antique Compass",
+  200801: "Villain Figurine",
+  201101: "Fire Starter",
+  201401: "Central Government Special Medal",
+  201701: "Peony Hairpin",
+};
+
 const PRIORITY_TIERS = ["Essential", "Ideal", "Passable"];
 
 // Full Nikke roster from Prydwen.gg (name, burst, element, weapon)
