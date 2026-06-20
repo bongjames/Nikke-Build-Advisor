@@ -6,1197 +6,4411 @@
 const SLOTS = ["Helmet", "Chest", "Gloves", "Boots"];
 
 // Harmony Cube TID → English name (sourced from game CDN)
-const HARMONY_CUBE_NAMES = {
-  1000301: "Assault Cube",
-  1000303: "Resilience Cube",
-  1000304: "Bastion Cube",
-  1000307: "Quantum Cube",
+const HARMONY_CUBES = {
+    1000301: "Assault Cube",
+    1000302: "Onslaught Cube",
+    1000303: "Resilience Cube",
+    1000304: "Bastion Cube",
+    1000305: "Adjudant Cube",
+    1000306: "Wingman Cube",
+    1000307: "Quantum Cube",
+    1000308: "Vigor Cube",
+    1000309: "Endurance Cube",
+    1000310: "Healing Cube",
+    1000311: "Tempering Cube",
+    1000312: "Assist Cube",
+    1000313: "Destruction Cube",
+    1000314: "Piercing Cube",
+    1000315: "Rupture Cube",
+    1000316: "Stealth Cube",
 };
 
-// Collection Doll TID → English name (sourced from game CDN)
-const COLLECTION_DOLL_NAMES = {
-  100101: "Cooking Commander Doll",
-  100102: "Cooking Commander Doll Ltd.",
-  100201: "Shopping Commander Doll",
-  100202: "Shopping Commander Doll Ltd.",
-  100301: "Exercising Commander Doll",
-  100302: "Exercising Commander Doll Ltd.",
-  100401: "Battling Commander Doll",
-  100402: "Battling Commander Doll Ltd.",
-  100501: "Coffee Commander Doll",
-  100502: "Coffee Commander Doll Ltd.",
-  100601: "Napping Commander Doll",
-  100602: "Napping Commander Doll Ltd.",
-  200401: "Hero Trilogy BD",
-  200601: "Sheet of Paper",
-  200701: "Antique Compass",
-  200801: "Villain Figurine",
-  201101: "Fire Starter",
-  201401: "Central Government Special Medal",
-  201701: "Peony Hairpin",
-};
+// Collection Dolls (sourced from game CDN)
+// weapon and treasure fields are filled in manually; SSR entries have treasure, R/SR do not
+const COLLECTION_DOLLS = [
+    { id: 100101, name: "Cooking Commander Doll", rarity: "R", weapon: "AR" },
+    { id: 100102, name: "Cooking Commander Doll Ltd.", rarity: "SR", weapon: "AR" },
+    { id: 100201, name: "Shopping Commander Doll", rarity: "R", weapon: "MG" },
+    { id: 100202, name: "Shopping Commander Doll Ltd.", rarity: "SR", weapon: "MG" },
+    { id: 100301, name: "Exercising Commander Doll", rarity: "R", weapon: "RL" },
+    { id: 100302, name: "Exercising Commander Doll Ltd.", rarity: "SR", weapon: "RL" },
+    { id: 100401, name: "Battling Commander Doll", rarity: "R", weapon: "SG" },
+    { id: 100402, name: "Battling Commander Doll Ltd.", rarity: "SR", weapon: "SG" },
+    { id: 100501, name: "Coffee Commander Doll", rarity: "R", weapon: "SMG" },
+    { id: 100502, name: "Coffee Commander Doll Ltd.", rarity: "SR", weapon: "SMG" },
+    { id: 100601, name: "Napping Commander Doll", rarity: "R", weapon: "SR" },
+    { id: 100602, name: "Napping Commander Doll Ltd.", rarity: "SR", weapon: "SR" },
+    { id: 200401, name: "Hero Trilogy BD", rarity: "SSR", weapon: "RL", treasure: "Laplace" },
+    { id: 200601, name: "Sheet of Paper", rarity: "SSR", weapon: "SMG", treasure: "Miranda" },
+    { id: 200701, name: "Antique Compass", rarity: "SSR", weapon: "SR", treasure: "Helm" },
+    { id: 200801, name: "Villain Figurine", rarity: "SSR", weapon: "SG", treasure: "Drake" },
+    { id: 201101, name: "Fire Starter", rarity: "SSR", weapon: "AR", treasure: "Tove" },
+    { id: 201401, name: "Central Government Special Medal", rarity: "SSR", weapon: "AR", treasure: "Privaty" },
+    { id: 201701, name: "Peony Hairpin", rarity: "SSR", weapon: "AR", treasure: "Moran" },
+];
 
-const PRIORITY_TIERS = ["Essential", "Ideal", "Passable"];
+const PRIORITY_TIERS = ["Ideal", "Passable"];
 
 // Full Nikke roster from Prydwen.gg (name, burst, element, weapon)
 // Burst: I, II, III; Element: Fire, Water, Wind, Electric, Iron
 // Weapon: SR=Sniper, RL=Rocket Launcher, AR=Assault Rifle, SMG=Submachine Gun, SG=Shotgun, MG=Minigun
 const NIKKE_DATABASE = [
-    { id: 810, name: "2B", burst: "III", element: "Fire", weapon: "SR", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x Critical Damage"], passable: ["4x Critical Rate", "4x ATK"] }
-    } },
-    { id: 811, name: "A2", burst: "III", element: "Fire", weapon: "RL", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 840, name: "Ada Wong", burst: "III", element: "Electric", weapon: "SMG", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 10, s2: 4, s3: 4 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"], passable: ["4x Critical Damage", "4x Charge Speed"] }
-    } },
-    { id: 310, name: "Ade", burst: "II", element: "Wind", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 5, s3: 1 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["4x Max Ammo"], passable: [] }
-    } },
-    { id: 315, name: "Ade: Agent Bunny", burst: "II", element: "Iron", weapon: "SMG", build: {
-        bossing: "S",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 7, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: ["4x Elemental Damage", "4x ATK"] }
-    } },
-    { id: 172, name: "Admi", burst: "II", element: "Wind", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 1, s3: 5 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 191, name: "Alice", burst: "III", element: "Fire", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 10, s2: 4, s3: 10 }, max: null }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Charge Speed", "4x ATK", "3x Max Ammo", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 195, name: "Alice: Wonderland Bunny", burst: "I", element: "Water", weapon: "RL", build: {
-        bossing: "B",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 4 }, max: { s1: 7, s2: 10, s3: 4 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["3x Max Ammo"], passable: [] }
-    } },
-    { id: 351, name: "Anchor", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 355, name: "Anchor: Innocent Maid", burst: "II", element: "Water", weapon: "SMG", build: {
-        bossing: "S",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 4 }, rec: { s1: 7, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] }
-    } },
-    { id: 12, name: "Anis", burst: "II", element: "Iron", weapon: "RL", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 15, name: "Anis: Sparkling Summer", burst: "III", element: "Electric", weapon: "RL", slug: "sparkling-summer-anis", build: {
-        bossing: "S",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 5 }, min: { s1: 7, s2: 7, s3: 9 }, rec: { s1: 10, s2: 10, s3: 9 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage", "Hit Rate"] }
-    } },
-    { id: 17, name: "Anis: Star", burst: "I", element: "Electric", weapon: "RL", build: {
-        bossing: "SSS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["Critical Rate", "Critical Damage", "Charge Damage"] }
-    } },
-    { id: 121, name: "Anne: Miracle Fairy", burst: "II", element: "Wind", weapon: "AR", slug: "miracle-fairy-anne", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: { s1: 4, s2: 4, s3: 7 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 581, name: "Arcana", burst: "II", element: "Electric", weapon: "SMG", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 4 }, rec: { s1: 10, s2: 10, s3: 4 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: ["4x Elemental Damage", "4x ATK", "4x Charge Speed"] }
-    } },
-    { id: 583, name: "Arcana: Fortune Mate", burst: "II", element: "Fire", weapon: "SMG", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 10, s2: 10, s3: 4 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage", "4x Critical Rate", "4x Hit Rate"] }
-    } },
-    { id: 432, name: "Aria", burst: "II", element: "Water", weapon: "SR", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 570, name: "Ark Ranger Black", burst: "III", element: "Wind", weapon: "AR", build: {
-        bossing: "S",
-        collection: { pvePriority: 7 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x Critical Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 830, name: "Asuka Shikinami Langley", burst: "III", element: "Fire", weapon: "RL", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x Max Ammo", "4x ATK"], passable: [] }
-    } },
-    { id: 835, name: "Asuka Shikinami Langley: Wille", burst: "III", element: "Wind", weapon: "RL", build: {
-        bossing: "S",
-        collection: { pvePriority: 7 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "High", ideal: ["4x Elemental Damage", "4x Max Ammo", "4x ATK"], passable: [] }
-    } },
-    { id: 441, name: "Avistar", burst: "I", element: "Electric", weapon: "AR", build: {
-        bossing: "C",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 1 }, rec: { s1: 4, s2: 7, s3: 1 }, max: { s1: 7, s2: 10, s3: 1 } }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 550, name: "Bay", burst: "II", element: "Fire", weapon: "SG", slug: "bay-treasure", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 60, name: "Belorta", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 381, name: "Biscuit", burst: "II", element: "Electric", weapon: "RL", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 4, s3: 7 }, max: { s1: 4, s2: 4, s3: 10 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 270, name: "Blanc", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 4 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 4, s2: 4, s3: 10 }, max: null }, priority: "Medium" },
-        overload: { priority: "Low", ideal: [], passable: [] }
-    } },
-    { id: 520, name: "Bready", burst: "III", element: "Water", weapon: "SG", build: {
-        bossing: "A",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"], passable: ["1x Max Ammo", "3x Charge Speed", "3x Critical Rate", "3x Critical Damage"] }
-    } },
-    { id: 70, name: "Brid", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 73, name: "Brid: Silent Track", burst: "II", element: "Fire", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["4x Critical Rate", "4x Critical Damage", "3x Max Ammo"] }
-    } },
-    { id: 80, name: "Centi", burst: "II", element: "Iron", weapon: "AR", slug: "centi-treasure", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 331, name: "Chime", burst: "II", element: "Iron", weapon: "SMG", build: {
-        bossing: "B",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 860, name: "Chisato Nishikigi", burst: "III", element: "Iron", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 511, name: "Cinderella", burst: "III", element: "Electric", weapon: "RL", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: ["3x Critical Rate", "3x Critical Damage", "2x Max Ammo"] }
-    } },
-    { id: 842, name: "Claire Redfield", burst: "I", element: "Electric", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 551, name: "Clay", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 7, s3: 4 }, max: { s1: 4, s2: 10, s3: 4 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 311, name: "Cocoa", burst: "I", element: "Fire", weapon: "SG", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 110, name: "Crow", burst: "III", element: "Fire", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 330, name: "Crown", burst: "II", element: "Iron", weapon: "MG", build: {
-        bossing: "SSS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 10 }, max: null }, priority: "Meta" },
-        overload: { priority: "Very High", ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["Critical Rate", "Critical Damage", "Max Ammo"] }
-    } },
-    { id: 521, name: "Crust", burst: "II", element: "Water", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 3, s2: 3, s3: 3 }, rec: { s1: 4, s2: 4, s3: 4 }, max: { s1: 5, s2: 5, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 40, name: "D", burst: "III", element: "Wind", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 43, name: "D: Killer Wife", burst: "I", element: "Fire", weapon: "SMG", build: {
-        bossing: "A",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 4 }, rec: { s1: 7, s2: 10, s3: 4 }, max: { s1: 10, s2: 10, s3: 7 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 20, name: "Delta", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 23, name: "Delta: Ninja Thief", burst: "II", element: "Water", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 1, s3: 1 }, rec: { s1: 7, s2: 1, s3: 1 }, max: { s1: 10, s2: 3, s3: 4 } }, priority: null },
-        overload: { priority: "Very Low", ideal: [], passable: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"] }
-    } },
-    { id: 72, name: "Diesel", burst: "II", element: "Wind", weapon: "MG", slug: "diesel-treasure", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 4 }, rec: { s1: 1, s2: 7, s3: 4 }, max: { s1: 4, s2: 10, s3: 7 } }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["3x Max Ammo"], passable: [] }
-    } },
-    { id: 75, name: "Diesel: Winter Sweets", burst: "III", element: "Fire", weapon: "MG", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "High", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["2x Max Ammo", "4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 202, name: "Dolla", burst: "II", element: "Wind", weapon: "SMG", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: { s1: 7, s2: 7, s3: 4 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 233, name: "Dorothy", burst: "I", element: "Water", weapon: "SMG", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 4, s3: 10 }, max: { s1: 10, s2: 7, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 234, name: "Dorothy: Serendipity", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "High", ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["Critical Rate", "Critical Damage"] }
-    } },
-    { id: 101, name: "Drake", burst: "III", element: "Fire", weapon: "AR", slug: "drake-treasure", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 10, s2: 4, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["1x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["3x Max Ammo", "3x Critical Rate", "3x Critical Damage", "3x Hit Rate"] }
-    } },
-    { id: 113, name: "E.H.", burst: "III", element: "Wind", weapon: "SR", slug: "e-h", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 10 }, rec: { s1: 7, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "3x Max Ammo", "4x ATK"], passable: ["4x Hit Rate", "4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 391, name: "Ein", burst: "III", element: "Electric", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["Max Ammo", "Charge Speed", "Critical Rate", "Critical Damage"] }
-    } },
-    { id: 500, name: "Elegg", burst: "II", element: "Electric", weapon: "RL", build: {
-        bossing: "C",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 4, s3: 7 }, max: { s1: 7, s2: 7, s3: 10 } }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 502, name: "Elegg: Boom and Shock", burst: "III", element: "Water", weapon: "RL", build: {
-        bossing: "S",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"], passable: ["Max Ammo", "Critical Damage", "Critical Rate"] }
-    } },
-    { id: 821, name: "Emilia", burst: "III", element: "Water", weapon: "RL", build: {
-        bossing: "C",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 4, s2: 7, s3: 7 }, max: { s1: 7, s2: 10, s3: 7 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 90, name: "Emma", burst: "I", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 93, name: "Emma: Tactical Upgrade", burst: "I", element: "Fire", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 241, name: "Epinel", burst: "III", element: "Wind", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 291, name: "Ether", burst: "I", element: "Electric", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 92, name: "Eunhwa", burst: "II", element: "Fire", weapon: "SR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 95, name: "Eunhwa: Tactical Upgrade", burst: "II", element: "Fire", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: ["Critical Damage", "Max Ammo", "Critical Rate"] }
-    } },
-    { id: 850, name: "Eve", burst: "III", element: "Iron", weapon: "MG", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 10, s2: 4, s3: 7 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"], passable: ["2x Critical Rate", "1x Max Ammo"] }
-    } },
-    { id: 210, name: "Exia", burst: "I", element: "Electric", weapon: "AR", slug: "exia-treasure", build: {
-        bossing: "A",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 7, s3: 4 }, rec: { s1: 1, s2: 10, s3: 7 }, max: { s1: 1, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Charge Speed", "Critical Rate", "Critical Damage"] }
-    } },
-    { id: 411, name: "Flora", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 7, s3: 7 }, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 242, name: "Folkwang", burst: "II", element: "Water", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 142, name: "Frima", burst: "I", element: "Iron", weapon: "SMG", slug: "frima-treasure", build: {
-        bossing: "C",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 4 }, rec: { s1: 1, s2: 7, s3: 7 }, max: { s1: 1, s2: 10, s3: 10 } }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["2x Max Ammo", "4x Charge Speed"], passable: [] }
-    } },
-    { id: 514, name: "Grave", burst: "II", element: "Fire", weapon: "SG", build: {
-        bossing: "S",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 7, s2: 4, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"], passable: [] }
-    } },
-    { id: 180, name: "Guillotine", burst: "III", element: "Electric", weapon: "MG", build: {
-        bossing: "C",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 7, s3: 4 }, max: { s1: 4, s2: 10, s3: 4 } }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 182, name: "Guillotine: Winter Slayer", burst: "III", element: "Water", weapon: "MG", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"], passable: ["2x Hit Rate", "2x Max Ammo"] }
-    } },
-    { id: 400, name: "Guilty", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 7, s2: 1, s3: 1 }, max: { s1: 10, s2: 4, s3: 4 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] }
-    } },
-    { id: 230, name: "Harran", burst: "III", element: "Electric", weapon: "SR", build: {
-        bossing: "F",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["4x ATK", "4x Charge Speed", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 352, name: "Helm", burst: "III", element: "Water", weapon: "SR", slug: "helm-treasure", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage", "4x Charge Speed", "1x Max Ammo"] }
-    } },
-    { id: 353, name: "Helm: Aquamarine", burst: "II", element: "Iron", weapon: "SR", slug: "aqua-marine-helm", build: {
-        bossing: "A",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 4 }, rec: { s1: 4, s2: 10, s3: 4 }, max: null }, priority: "Medium" },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 802, name: "Himeno", burst: "II", element: "Wind", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 231, name: "Isabel", burst: "III", element: "Electric", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 111, name: "Jackal", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 841, name: "Jill Valentine", burst: "III", element: "Electric", weapon: "SMG", build: {
-        bossing: "A",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 150, name: "Julia", burst: "III", element: "Iron", weapon: "MG", slug: "julia-treasure", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["1x Max Ammo", "3x Critical Rate"] }
-    } },
-    { id: 41, name: "K", burst: "III", element: "Electric", weapon: "SMG", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 4 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage"] }
-    } },
-    { id: 361, name: "Kilo", burst: "III", element: "Fire", weapon: "SG", build: {
-        bossing: "F",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 4, s3: 7 }, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x Critical Rate", "4x Critical Damage"], passable: [] }
-    } },
-    { id: 862, name: "Kurumi", burst: "I", element: "Iron", weapon: "SMG", build: {
-        bossing: "C",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 1, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 582, name: "Label", burst: "I", element: "Iron", weapon: "SMG", build: {
-        bossing: "B",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 1 }, rec: { s1: 1, s2: 7, s3: 1 }, max: { s1: 1, s2: 10, s3: 1 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 100, name: "Laplace", burst: "III", element: "Iron", weapon: "RL", slug: "laplace-treasure", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 4, s2: 7, s3: 10 }, max: { s1: 4, s2: 10, s3: 10 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 382, name: "Leona", burst: "II", element: "Water", weapon: "SG", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: null }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 262, name: "Liberalio", burst: "III", element: "Wind", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"], passable: ["3x Charge Speed", "3x Critical Damage"] }
-    } },
-    { id: 852, name: "Lily", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 82, name: "Liter", burst: "I", element: "Iron", weapon: "AR", build: {
-        bossing: "S",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 7, s2: 4, s3: 10 }, max: { s1: 10, s2: 4, s3: 10 } }, priority: "Very High" },
-        overload: { priority: "Medium", ideal: [], passable: [] }
-    } },
-    { id: 513, name: "Siren", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Very High", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage", "4x Max Ammo"] }
-    } },
-    { id: 190, name: "Ludmilla", burst: "I", element: "Water", weapon: "SG", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 4, s3: 1 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 194, name: "Ludmilla: Winter Owner", burst: "III", element: "Water", weapon: "SG", build: {
-        bossing: "S",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 5 }, rec: { s1: 10, s2: 4, s3: 10 }, max: { s1: 10, s2: 7, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["2x Max Ammo", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 181, name: "Maiden", burst: "III", element: "Electric", weapon: "SR", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 183, name: "Maiden: Ice Rose", burst: "III", element: "Electric", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 7 },
-        skill: { pve: { start: { s1: 4, s2: 7, s3: 4 }, min: { s1: 4, s2: 10, s3: 4 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: ["3x Charge Speed"] }
-    } },
-    { id: 800, name: "Makima", burst: "II", element: "Water", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 290, name: "Mana", burst: "III", element: "Wind", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 321, name: "Marciana", burst: "II", element: "Iron", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 1 }, min: null, rec: null, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 832, name: "Mari Makinami Illustrious", burst: "II", element: "Electric", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 4, s3: 7 }, rec: { s1: 7, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 130, name: "Mary", burst: "I", element: "Water", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 132, name: "Mary: Bay Goddess", burst: "I", element: "Water", weapon: "SMG", slug: "bay-goddess-mary", build: {
-        bossing: "C",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Low" },
-        overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 350, name: "Mast", burst: "II", element: "Electric", weapon: "SMG", build: {
-        bossing: "C",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: { s1: 7, s2: 4, s3: 7 } }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 354, name: "Mast: Romantic Maid", burst: "II", element: "Water", weapon: "SMG", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 4 }, rec: { s1: 7, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"], passable: ["3x Hit Rate", "3x Max Ammo"] }
-    } },
-    { id: 102, name: "Maxwell", burst: "III", element: "Iron", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 4, s2: 1, s3: 4 }, min: { s1: 7, s2: 1, s3: 4 }, rec: { s1: 10, s2: 1, s3: 7 }, max: { s1: 10, s2: 4, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage", "2x Max Ammo"], passable: [] }
-    } },
-    { id: 61, name: "Mica", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 62, name: "Mica: Snow Buddy", burst: "I", element: "Iron", weapon: "SMG", build: {
-        bossing: "B",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 161, name: "Mihara", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 162, name: "Mihara: Bonding Chain", burst: "III", element: "Fire", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 5, s2: 5, s3: 5 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "High", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["Critical Rate", "Critical Damage", "Max Ammo"] }
-    } },
-    { id: 141, name: "Milk", burst: "I", element: "Water", weapon: "SR", slug: "milk-treasure", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: ["1x Max Ammo", "4x Charge Speed"] }
-    } },
-    { id: 143, name: "Milk: Blooming Bunny", burst: "III", element: "Iron", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 10 }, max: null }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 600, name: "Mint", burst: "II", element: "Iron", weapon: "AR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 7, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 32, name: "Miranda", burst: "I", element: "Fire", weapon: "SMG", slug: "miranda-treasure", build: {
-        bossing: "S",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 4 }, rec: { s1: 1, s2: 7, s3: 7 }, max: { s1: 7, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 833, name: "Misato Katsuragi", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 260, name: "Modernia", burst: "III", element: "Fire", weapon: "MG", build: {
-        bossing: "A",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 4 }, rec: { s1: 10, s2: 10, s3: 4 }, max: null }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Max Ammo", "4x ATK", "4x Elemental Damage"], passable: ["1x Hit Rate", "2x Critical Rate"] }
-    } },
-    { id: 281, name: "Moran", burst: "I", element: "Electric", weapon: "SG", slug: "moran-treasure", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage", "4x Critical Rate", "4x DEF"] }
-    } },
-    { id: 590, name: "Mori", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 120, name: "N102", burst: "I", element: "Water", weapon: "SMG", build: {
-        bossing: "C",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 1, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 450, name: "Naga", burst: "II", element: "Electric", weapon: "SMG", build: {
-        bossing: "A",
-        collection: { pvePriority: 7 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Low", ideal: ["4x ATK", "4x Elemental Damage", "4x Max Ammo"], passable: ["4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 223, name: "Nayuta", burst: "II", element: "Wind", weapon: "SMG", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 5, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Very High", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage", "4x Charge Damage"] }
-    } },
-    { id: 11, name: "Neon", burst: "I", element: "Fire", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 14, name: "Neon: Blue Ocean", burst: "III", element: "Water", weapon: "AR", slug: "blue-ocean-neon", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 18, name: "Neon: Vision Eye", burst: "III", element: "Electric", weapon: "AR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x Charge Speed", "3x ATK", "2x Max Ammo"], passable: [] }
-    } },
-    { id: 380, name: "Nero", burst: "II", element: "Fire", weapon: "SG", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 193, name: "Neve", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 4, s3: 1 }, max: null }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 261, name: "Nihilister", burst: "II", element: "Fire", weapon: "MG", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 232, name: "Noah", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 271, name: "Noir", burst: "III", element: "Wind", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 5, s3: 4 }, rec: { s1: 10, s2: 9, s3: 4 }, max: { s1: 10, s2: 10, s3: 4 } }, priority: "Medium" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "3x Max Ammo", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 430, name: "Noise", burst: "I", element: "Electric", weapon: "RL", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 4, s3: 4 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 212, name: "Novel", burst: "II", element: "Iron", weapon: "RL", build: {
-        bossing: "C",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 1, s3: 7 }, max: { s1: 4, s2: 4, s3: 10 } }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 812, name: "Pascal", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 131, name: "Pepper", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 580, name: "Phantom", burst: "III", element: "Water", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 4 }, max: { s1: 10, s2: 10, s3: 7 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"], passable: ["2x Hit Rate", "2x Critical Damage", "2x Critical Rate", "2x Max Ammo"] }
-    } },
-    { id: 30, name: "Poli", burst: "II", element: "Water", weapon: "SG", slug: "poli-treasure", build: {
-        bossing: "C",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 4, s3: 7 }, max: { s1: 4, s2: 4, s3: 10 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 801, name: "Power", burst: "III", element: "Fire", weapon: "MG", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x ATK", "4x Charge Speed", "4x Elemental Damage"], passable: [] }
-    } },
-    { id: 601, name: "Prika", burst: "II", element: "Water", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 7 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 170, name: "Privaty", burst: "III", element: "Water", weapon: "AR", slug: "privaty-treasure", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 313, name: "Privaty: Unkind Maid", burst: "III", element: "Electric", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 4 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 7, s3: 4 }, max: { s1: 10, s2: 10, s3: 7 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["3x Hit Rate", "3x Critical Rate", "3x Critical Damage"] }
-    } },
-    { id: 302, name: "Product 08", burst: "I", element: "Electric", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 303, name: "Product 12", burst: "III", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 307, name: "Product 23", burst: "II", element: "Wind", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 402, name: "Quency", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 403, name: "Quency: Escape Queen", burst: "III", element: "Water", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 8 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo", "2x Hit Rate"], passable: ["2x Critical Damage", "2x Critical Rate", "1x Hit Rate", "1x Max Ammo"] }
-    } },
-    { id: 33, name: "Quiry", burst: "III", element: "Wind", weapon: "SR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 822, name: "Ram", burst: "I", element: "Wind", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 10, name: "Rapi", burst: "III", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 3, s2: 3, s3: 3 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 16, name: "Rapi: Red Hood", burst: "I", element: "Fire", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 10 }, max: null }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 221, name: "Rapunzel", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 226, name: "Rapunzel: Pure Grace", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 851, name: "Raven", burst: "III", element: "Iron", weapon: "SR", build: {
-        bossing: "SS",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "High", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["Critical Rate", "Critical Damage", "1x Max Ammo"] }
-    } },
-    { id: 470, name: "Red Hood", burst: "All", element: "Iron", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 10 }, max: null }, priority: "Very High" },
-        overload: { priority: "Very High", ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"], passable: ["3x Charge Speed"] }
-    } },
-    { id: 392, name: "Rei", burst: "I", element: "Water", weapon: "SMG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 831, name: "Rei Ayanami", burst: "III", element: "Fire", weapon: "RL", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 7 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x ATK", "4x Elemental Damage", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 834, name: "Rei Ayanami (Tentative Name)", burst: "III", element: "Wind", weapon: "RL", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: ["2x Critical Damage", "2x Critical Rate"] }
-    } },
-    { id: 820, name: "Rem", burst: "II", element: "Water", weapon: "AR", build: {
-        bossing: "B",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 4, s3: 7 }, max: { s1: 10, s2: 7, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage"] }
-    } },
-    { id: 280, name: "Rosanna", burst: "I", element: "Electric", weapon: "SG", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 283, name: "Rosanna: Chic Ocean", burst: "II", element: "Wind", weapon: "SG", build: {
-        bossing: "S",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 7, s3: 10 }, max: { s1: 7, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Low", ideal: [], passable: [] }
-    } },
-    { id: 272, name: "Rouge", burst: "I", element: "Electric", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: ["4x Elemental Damage", "4x ATK"] }
-    } },
-    { id: 240, name: "Rumani", burst: "I", element: "Fire", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 200, name: "Rupee", burst: "II", element: "Iron", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] }
-    } },
-    { id: 203, name: "Rupee: Winter Shopper", burst: "I", element: "Electric", weapon: "RL", slug: "winter-shopper-rupee", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 282, name: "Sakura", burst: "I", element: "Fire", weapon: "SG", build: {
-        bossing: "B",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: { s1: 4, s2: 4, s3: 7 } }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 836, name: "Sakura Suzuhara", burst: "I", element: "Water", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 1, s3: 1 }, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 284, name: "Sakura: Bloom in Summer", burst: "III", element: "Wind", weapon: "SG", build: {
-        bossing: "B",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 5, s2: 7, s3: 7 }, max: { s1: 7, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage"] }
-    } },
-    { id: 222, name: "Scarlet", burst: "III", element: "Electric", weapon: "SR", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 4, s3: 7 }, max: { s1: 10, s2: 4, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 225, name: "Scarlet: Black Shadow", burst: "III", element: "Wind", weapon: "SMG", build: {
-        bossing: "SS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 7, s3: 10 }, max: null }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["1x Max Ammo", "1x Charge Speed", "4x Elemental Damage", "4x ATK"], passable: ["3x Charge Speed"] }
-    } },
-    { id: 22, name: "Signal", burst: "II", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 401, name: "Sin", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: { s1: 4, s2: 4, s3: 4 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 620, name: "Snow Crane", burst: "II", element: "Water", weapon: "SG", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 220, name: "Snow White", burst: "III", element: "Iron", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 10 }, max: { s1: 4, s2: 7, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"], passable: [] }
-    } },
-    { id: 471, name: "Snow White: Heavy Arms", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "SSS",
-        collection: { pvePriority: 10 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 7, s2: 7, s3: 7 }, rec: { s1: 10, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Meta" },
-        overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["1x Max Ammo", "4x Critical Rate", "4x Critical Damage"] }
-    } },
-    { id: 224, name: "Snow White: Innocent Days", burst: "III", element: "Iron", weapon: "SR", slug: "innocent-dayss-snow-white", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 312, name: "Soda", burst: "I", element: "Fire", weapon: "SG", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 314, name: "Soda: Twinkling Bunny", burst: "III", element: "Iron", weapon: "SG", build: {
-        bossing: "A",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 4, s2: 4, s3: 4 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 300, name: "Soldier EG", burst: "III", element: "Electric", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 301, name: "Soldier FA", burst: "II", element: "Iron", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 306, name: "Soldier OW", burst: "I", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 71, name: "Soline", burst: "III", element: "Iron", weapon: "AR", build: {
-        bossing: "C",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 74, name: "Soline: Frost Ticket", burst: "I", element: "Water", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 1, s3: 1 }, rec: { s1: 8, s2: 1, s3: 1 }, max: { s1: 10, s2: 4, s3: 1 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: ["4x Critical Damage", "4x Critical Rate", "2x Max Ammo"] }
-    } },
-    { id: 532, name: "Sora", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "D",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 7, s3: 4 }, max: { s1: 4, s2: 10, s3: 4 } }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 140, name: "Sugar", burst: "III", element: "Iron", weapon: "RL", build: {
-        bossing: "C",
-        collection: { pvePriority: 3 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 5, s3: 5 }, max: null }, priority: "Very Low" },
-        overload: { priority: "Very Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] }
-    } },
-    { id: 861, name: "Takina Inoue", burst: "II", element: "Iron", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 451, name: "Tia", burst: "I", element: "Iron", weapon: "RL", build: {
-        bossing: "A",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 4, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 4 }, rec: { s1: 10, s2: 4, s3: 4 }, max: null }, priority: "Medium" },
-        overload: { priority: "Low", ideal: [], passable: [] }
-    } },
-    { id: 192, name: "Tove", burst: "I", element: "Water", weapon: "SMG", slug: "tove-treasure", build: {
-        bossing: "S",
-        collection: { pvePriority: 9 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 3, s2: 4, s3: 4 }, rec: { s1: 6, s2: 7, s3: 7 }, max: { s1: 9, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"], passable: ["Max Ammo"] }
-    } },
-    { id: 412, name: "Trina", burst: "II", element: "Electric", weapon: "AR", build: {
-        bossing: "A",
-        collection: { pvePriority: 4 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 7, s3: 7 }, max: { s1: 4, s2: 10, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Charge Speed", "3x Max Ammo"], passable: ["Elemental Damage", "ATK"] }
-    } },
-    { id: 501, name: "Trony", burst: "III", element: "Fire", weapon: "AR", build: {
-        bossing: "D",
-        collection: { pvePriority: 2 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 4, s2: 4, s3: 7 }, max: { s1: 4, s2: 4, s3: 10 } }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] }
-    } },
-    { id: 316, name: "Velvet", burst: "II", element: "Wind", weapon: "SR", build: {
-        bossing: "S",
-        collection: { pvePriority: 6 },
-        skill: { pve: { start: { s1: 1, s2: 5, s3: 1 }, min: { s1: 1, s2: 10, s3: 1 }, rec: { s1: 7, s2: 10, s3: 10 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo", "4x Charge Speed"], passable: ["4x Critical Damage", "4x Critical Rate"] }
-    } },
-    { id: 91, name: "Vesti", burst: "III", element: "Water", weapon: "SR", build: {
-        bossing: "E",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null }, priority: "Very Low" },
-        overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Charge Speed"] }
-    } },
-    { id: 94, name: "Vesti: Tactical Upgrade", burst: "III", element: "Fire", weapon: "SR", build: {
-        bossing: "B",
-        collection: { pvePriority: 8 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 7, s3: 7 }, rec: { s1: 7, s2: 10, s3: 10 }, max: null }, priority: "Very High" },
-        overload: { priority: "Medium", ideal: ["4x Elemental Damage", "2x Max Ammo", "2x Charge Speed", "4x ATK"], passable: ["Max Ammo", "Critical Damage", "Critical Rate"] }
-    } },
-    { id: 112, name: "Viper", burst: "II", element: "Water", weapon: "SG", slug: "viper-treasure", build: {
-        bossing: "B",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: { s1: 7, s2: 4, s3: 7 }, max: { s1: 10, s2: 4, s3: 10 } }, priority: "Low" },
-        overload: { priority: "Low", ideal: ["4x Max Ammo", "4x ATK", "4x Elemental Damage"], passable: ["4x Hit Rate"] }
-    } },
-    { id: 431, name: "Volume", burst: "I", element: "Wind", weapon: "SMG", build: {
-        bossing: "A",
-        collection: { pvePriority: null },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 1, s3: 4 }, rec: { s1: 1, s2: 4, s3: 4 }, max: { s1: 1, s2: 7, s3: 7 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: [], passable: [] }
-    } },
-    { id: 201, name: "Yan", burst: "I", element: "Fire", weapon: "SR", build: {
-        bossing: "E",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 171, name: "Yulha", burst: "III", element: "Fire", weapon: "RL", build: {
-        bossing: "B",
-        collection: { pvePriority: 1 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 1 }, rec: { s1: 1, s2: 7, s3: 1 }, max: { s1: 1, s2: 10, s3: 1 } }, priority: "Low" },
-        overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] }
-    } },
-    { id: 160, name: "Yuni", burst: "II", element: "Fire", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 390, name: "Zwei", burst: "I", element: "Electric", weapon: "RL", slug: "zwei-treasure", build: {
-        bossing: "S",
-        collection: { pvePriority: 5 },
-        skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 7, s2: 4, s3: 7 }, rec: { s1: 10, s2: 7, s3: 7 }, max: { s1: 10, s2: 10, s3: 10 } }, priority: "Medium" },
-        overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK"], passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"] }
-    } },
-    { id: 304, name: "iDoll Flower", burst: "I", element: "Wind", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 305, name: "iDoll Ocean", burst: "I", element: "Water", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
-    { id: 308, name: "iDoll Sun", burst: "III", element: "Iron", weapon: "AR", build: {
-        bossing: "F",
-        collection: { pvePriority: null },
-        skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
-        overload: { priority: null, ideal: [], passable: [] }
-    } },
+    {
+        id: 810,
+        name: "2B",
+        burst: "III",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Defender",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "4x Critical Damage"],
+                passable: ["4x Critical Rate", "4x ATK"],
+            },
+        },
+    },
+    {
+        id: 811,
+        name: "A2",
+        burst: "III",
+        element: "Fire",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 840,
+        name: "Ada Wong",
+        burst: "III",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 10, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"],
+                passable: ["4x Critical Damage", "4x Charge Speed"],
+            },
+        },
+    },
+    {
+        id: 310,
+        name: "Ade",
+        burst: "II",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 5, s3: 1 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 315,
+        name: "Ade: Agent Bunny",
+        burst: "II",
+        element: "Iron",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 7, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: ["4x Elemental Damage", "4x ATK"] },
+        },
+    },
+    {
+        id: 172,
+        name: "Admi",
+        burst: "II",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 1, s3: 5 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 191,
+        name: "Alice",
+        burst: "III",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 10, s2: 4, s3: 10 }, max: null },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["2x Charge Speed", "4x ATK", "3x Max Ammo", "4x Elemental Damage"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 195,
+        name: "Alice: Wonderland Bunny",
+        burst: "I",
+        element: "Water",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 4 },
+                    max: { s1: 7, s2: 10, s3: 4 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: ["3x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 351,
+        name: "Anchor",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 355,
+        name: "Anchor: Innocent Maid",
+        burst: "II",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 4 },
+                    rec: { s1: 7, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 12,
+        name: "Anis",
+        burst: "II",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 15,
+        name: "Anis: Sparkling Summer",
+        burst: "III",
+        element: "Electric",
+        weapon: "RL",
+        slug: "sparkling-summer-anis",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 5 },
+                    min: { s1: 7, s2: 7, s3: 9 },
+                    rec: { s1: 10, s2: 10, s3: 9 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage", "Hit Rate"],
+            },
+        },
+    },
+    {
+        id: 17,
+        name: "Anis: Star",
+        burst: "I",
+        element: "Electric",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "SSS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["Critical Rate", "Critical Damage", "Charge Damage"],
+            },
+        },
+    },
+    {
+        id: 121,
+        name: "Anne: Miracle Fairy",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        slug: "miracle-fairy-anne",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 4, s3: 4 },
+                    max: { s1: 4, s2: 4, s3: 7 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 581,
+        name: "Arcana",
+        burst: "II",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 4 },
+                    rec: { s1: 10, s2: 10, s3: 4 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["2x Max Ammo"],
+                passable: ["4x Elemental Damage", "4x ATK", "4x Charge Speed"],
+            },
+        },
+    },
+    {
+        id: 583,
+        name: "Arcana: Fortune Mate",
+        burst: "II",
+        element: "Fire",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 10, s2: 10, s3: 4 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Damage", "4x Critical Rate", "4x Hit Rate"],
+            },
+        },
+    },
+    {
+        id: 432,
+        name: "Aria",
+        burst: "II",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 570,
+        name: "Ark Ranger Black",
+        burst: "III",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 7 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x Critical Damage", "4x ATK"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 830,
+        name: "Asuka Shikinami Langley",
+        burst: "III",
+        element: "Fire",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x Max Ammo", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 835,
+        name: "Asuka Shikinami Langley: Wille",
+        burst: "III",
+        element: "Wind",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 7 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: { priority: "High", ideal: ["4x Elemental Damage", "4x Max Ammo", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 441,
+        name: "Avistar",
+        burst: "I",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 1 },
+                    rec: { s1: 4, s2: 7, s3: 1 },
+                    max: { s1: 7, s2: 10, s3: 1 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 550,
+        name: "Bay",
+        burst: "II",
+        element: "Fire",
+        weapon: "SG",
+        slug: "bay-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 60,
+        name: "Belorta",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 381,
+        name: "Biscuit",
+        burst: "II",
+        element: "Electric",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 4, s3: 7 },
+                    max: { s1: 4, s2: 4, s3: 10 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 270,
+        name: "Blanc",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 4, s2: 4, s3: 10 },
+                    max: null,
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 520,
+        name: "Bready",
+        burst: "III",
+        element: "Water",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"],
+                passable: ["1x Max Ammo", "3x Charge Speed", "3x Critical Rate", "3x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 70,
+        name: "Brid",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 73,
+        name: "Brid: Silent Track",
+        burst: "II",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["4x Critical Rate", "4x Critical Damage", "3x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 80,
+        name: "Centi",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        slug: "centi-treasure",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 331,
+        name: "Chime",
+        burst: "II",
+        element: "Iron",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 860,
+        name: "Chisato Nishikigi",
+        burst: "III",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 511,
+        name: "Cinderella",
+        burst: "III",
+        element: "Electric",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Defender",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"],
+                passable: ["3x Critical Rate", "3x Critical Damage", "2x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 842,
+        name: "Claire Redfield",
+        burst: "I",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 551,
+        name: "Clay",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 7, s3: 4 },
+                    max: { s1: 4, s2: 10, s3: 4 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 311,
+        name: "Cocoa",
+        burst: "I",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 110,
+        name: "Crow",
+        burst: "III",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 330,
+        name: "Crown",
+        burst: "II",
+        element: "Iron",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Defender",
+        build: {
+            bossing: "SSS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 10 },
+                    max: null,
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Very High",
+                ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["Critical Rate", "Critical Damage", "Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 521,
+        name: "Crust",
+        burst: "II",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 3, s2: 3, s3: 3 },
+                    rec: { s1: 4, s2: 4, s3: 4 },
+                    max: { s1: 5, s2: 5, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 40,
+        name: "D",
+        burst: "III",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 43,
+        name: "D: Killer Wife",
+        burst: "I",
+        element: "Fire",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 4 },
+                    rec: { s1: 7, s2: 10, s3: 4 },
+                    max: { s1: 10, s2: 10, s3: 7 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 20,
+        name: "Delta",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 23,
+        name: "Delta: Ninja Thief",
+        burst: "II",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 1, s3: 1 },
+                    rec: { s1: 7, s2: 1, s3: 1 },
+                    max: { s1: 10, s2: 3, s3: 4 },
+                },
+                priority: null,
+            },
+            overload: { priority: "Very Low", ideal: [], passable: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"] },
+        },
+    },
+    {
+        id: 72,
+        name: "Diesel",
+        burst: "II",
+        element: "Wind",
+        weapon: "MG",
+        slug: "diesel-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 4 },
+                    rec: { s1: 1, s2: 7, s3: 4 },
+                    max: { s1: 4, s2: 10, s3: 7 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["3x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 75,
+        name: "Diesel: Winter Sweets",
+        burst: "III",
+        element: "Fire",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "High",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["2x Max Ammo", "4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 202,
+        name: "Dolla",
+        burst: "II",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 4, s3: 4 },
+                    max: { s1: 7, s2: 7, s3: 4 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 233,
+        name: "Dorothy",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 4, s3: 10 },
+                    max: { s1: 10, s2: 7, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 234,
+        name: "Dorothy: Serendipity",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "High",
+                ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["Critical Rate", "Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 101,
+        name: "Drake",
+        burst: "III",
+        element: "Fire",
+        weapon: "AR",
+        slug: "drake-treasure",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 4, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["1x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["3x Max Ammo", "3x Critical Rate", "3x Critical Damage", "3x Hit Rate"],
+            },
+        },
+    },
+    {
+        id: 113,
+        name: "E.H.",
+        burst: "III",
+        element: "Wind",
+        weapon: "SR",
+        slug: "e-h",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 10 },
+                    rec: { s1: 7, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "3x Max Ammo", "4x ATK"],
+                passable: ["4x Hit Rate", "4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 391,
+        name: "Ein",
+        burst: "III",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["Max Ammo", "Charge Speed", "Critical Rate", "Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 500,
+        name: "Elegg",
+        burst: "II",
+        element: "Electric",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 4, s3: 7 },
+                    max: { s1: 7, s2: 7, s3: 10 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 502,
+        name: "Elegg: Boom and Shock",
+        burst: "III",
+        element: "Water",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"],
+                passable: ["Max Ammo", "Critical Damage", "Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 821,
+        name: "Emilia",
+        burst: "III",
+        element: "Water",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 4, s2: 7, s3: 7 },
+                    max: { s1: 7, s2: 10, s3: 7 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 90,
+        name: "Emma",
+        burst: "I",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 93,
+        name: "Emma: Tactical Upgrade",
+        burst: "I",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 241,
+        name: "Epinel",
+        burst: "III",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 291,
+        name: "Ether",
+        burst: "I",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 92,
+        name: "Eunhwa",
+        burst: "II",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 95,
+        name: "Eunhwa: Tactical Upgrade",
+        burst: "II",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"],
+                passable: ["Critical Damage", "Max Ammo", "Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 850,
+        name: "Eve",
+        burst: "III",
+        element: "Iron",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 10, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"],
+                passable: ["2x Critical Rate", "1x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 210,
+        name: "Exia",
+        burst: "I",
+        element: "Electric",
+        weapon: "AR",
+        slug: "exia-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 7, s3: 4 },
+                    rec: { s1: 1, s2: 10, s3: 7 },
+                    max: { s1: 1, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Charge Speed", "Critical Rate", "Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 411,
+        name: "Flora",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 7, s3: 7 },
+                    max: null,
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 242,
+        name: "Folkwang",
+        burst: "II",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 142,
+        name: "Frima",
+        burst: "I",
+        element: "Iron",
+        weapon: "SMG",
+        slug: "frima-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 4 },
+                    rec: { s1: 1, s2: 7, s3: 7 },
+                    max: { s1: 1, s2: 10, s3: 10 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["2x Max Ammo", "4x Charge Speed"], passable: [] },
+        },
+    },
+    {
+        id: 514,
+        name: "Grave",
+        burst: "II",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 7, s2: 4, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 180,
+        name: "Guillotine",
+        burst: "III",
+        element: "Electric",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 7, s3: 4 },
+                    max: { s1: 4, s2: 10, s3: 4 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 182,
+        name: "Guillotine: Winter Slayer",
+        burst: "III",
+        element: "Water",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"],
+                passable: ["2x Hit Rate", "2x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 400,
+        name: "Guilty",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 7, s2: 1, s3: 1 },
+                    max: { s1: 10, s2: 4, s3: 4 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 230,
+        name: "Harran",
+        burst: "III",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["4x ATK", "4x Charge Speed", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 352,
+        name: "Helm",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        slug: "helm-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage", "4x Charge Speed", "1x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 353,
+        name: "Helm: Aquamarine",
+        burst: "II",
+        element: "Iron",
+        weapon: "SR",
+        slug: "aqua-marine-helm",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 4 },
+                    rec: { s1: 4, s2: 10, s3: 4 },
+                    max: null,
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 802,
+        name: "Himeno",
+        burst: "II",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 231,
+        name: "Isabel",
+        burst: "III",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 111,
+        name: "Jackal",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 841,
+        name: "Jill Valentine",
+        burst: "III",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 150,
+        name: "Julia",
+        burst: "III",
+        element: "Iron",
+        weapon: "MG",
+        slug: "julia-treasure",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["1x Max Ammo", "3x Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 41,
+        name: "K",
+        burst: "III",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 4 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Critical Damage"] },
+        },
+    },
+    {
+        id: 361,
+        name: "Kilo",
+        burst: "III",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 4, s3: 7 },
+                    max: null,
+                },
+                priority: null,
+            },
+            overload: {
+                priority: null,
+                ideal: ["4x Elemental Damage", "4x Critical Rate", "4x Critical Damage"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 862,
+        name: "Kurumi",
+        burst: "I",
+        element: "Iron",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 1, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 582,
+        name: "Label",
+        burst: "I",
+        element: "Iron",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 1 },
+                    rec: { s1: 1, s2: 7, s3: 1 },
+                    max: { s1: 1, s2: 10, s3: 1 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 100,
+        name: "Laplace",
+        burst: "III",
+        element: "Iron",
+        weapon: "RL",
+        slug: "laplace-treasure",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 4, s2: 7, s3: 10 },
+                    max: { s1: 4, s2: 10, s3: 10 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 382,
+        name: "Leona",
+        burst: "II",
+        element: "Water",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: null,
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 262,
+        name: "Liberalio",
+        burst: "III",
+        element: "Wind",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"],
+                passable: ["3x Charge Speed", "3x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 852,
+        name: "Lily",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 82,
+        name: "Liter",
+        burst: "I",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 7, s2: 4, s3: 10 },
+                    max: { s1: 10, s2: 4, s3: 10 },
+                },
+                priority: "Very High",
+            },
+            overload: { priority: "Medium", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 513,
+        name: "Siren",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Very High",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage", "4x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 190,
+        name: "Ludmilla",
+        burst: "I",
+        element: "Water",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 4, s3: 1 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 194,
+        name: "Ludmilla: Winter Owner",
+        burst: "III",
+        element: "Water",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 5 },
+                    rec: { s1: 10, s2: 4, s3: 10 },
+                    max: { s1: 10, s2: 7, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["2x Max Ammo", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 181,
+        name: "Maiden",
+        burst: "III",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 183,
+        name: "Maiden: Ice Rose",
+        burst: "III",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 7 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 7, s3: 4 },
+                    min: { s1: 4, s2: 10, s3: 4 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"],
+                passable: ["3x Charge Speed"],
+            },
+        },
+    },
+    {
+        id: 800,
+        name: "Makima",
+        burst: "II",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 290,
+        name: "Mana",
+        burst: "III",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 321,
+        name: "Marciana",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 4, s2: 4, s3: 1 }, min: null, rec: null, max: null }, priority: "Very Low" },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 832,
+        name: "Mari Makinami Illustrious",
+        burst: "II",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 7 },
+                    rec: { s1: 7, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 130,
+        name: "Mary",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 132,
+        name: "Mary: Bay Goddess",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        slug: "bay-goddess-mary",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Low",
+            },
+            overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 350,
+        name: "Mast",
+        burst: "II",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 4, s3: 4 },
+                    max: { s1: 7, s2: 4, s3: 7 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 354,
+        name: "Mast: Romantic Maid",
+        burst: "II",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 4 },
+                    rec: { s1: 7, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"],
+                passable: ["3x Hit Rate", "3x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 102,
+        name: "Maxwell",
+        burst: "III",
+        element: "Iron",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 1, s3: 4 },
+                    min: { s1: 7, s2: 1, s3: 4 },
+                    rec: { s1: 10, s2: 1, s3: 7 },
+                    max: { s1: 10, s2: 4, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage", "2x Max Ammo"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 61,
+        name: "Mica",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 62,
+        name: "Mica: Snow Buddy",
+        burst: "I",
+        element: "Iron",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 161,
+        name: "Mihara",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 162,
+        name: "Mihara: Bonding Chain",
+        burst: "III",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 5, s2: 5, s3: 5 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "High",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["Critical Rate", "Critical Damage", "Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 141,
+        name: "Milk",
+        burst: "I",
+        element: "Water",
+        weapon: "SR",
+        slug: "milk-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 4 },
+                    max: null,
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: ["1x Max Ammo", "4x Charge Speed"] },
+        },
+    },
+    {
+        id: 143,
+        name: "Milk: Blooming Bunny",
+        burst: "III",
+        element: "Iron",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 10 },
+                    max: null,
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 600,
+        name: "Mint",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 32,
+        name: "Miranda",
+        burst: "I",
+        element: "Fire",
+        weapon: "SMG",
+        slug: "miranda-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 4 },
+                    rec: { s1: 1, s2: 7, s3: 7 },
+                    max: { s1: 7, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 833,
+        name: "Misato Katsuragi",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 260,
+        name: "Modernia",
+        burst: "III",
+        element: "Fire",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 4 },
+                    rec: { s1: 10, s2: 10, s3: 4 },
+                    max: null,
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Max Ammo", "4x ATK", "4x Elemental Damage"],
+                passable: ["1x Hit Rate", "2x Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 281,
+        name: "Moran",
+        burst: "I",
+        element: "Electric",
+        weapon: "SG",
+        slug: "moran-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Damage", "4x Critical Rate", "4x DEF"],
+            },
+        },
+    },
+    {
+        id: 590,
+        name: "Mori",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 1, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 120,
+        name: "N102",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 1, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 450,
+        name: "Naga",
+        burst: "II",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 7 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x ATK", "4x Elemental Damage", "4x Max Ammo"],
+                passable: ["4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 223,
+        name: "Nayuta",
+        burst: "II",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 5, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Very High",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage", "4x Charge Damage"],
+            },
+        },
+    },
+    {
+        id: 11,
+        name: "Neon",
+        burst: "I",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 14,
+        name: "Neon: Blue Ocean",
+        burst: "III",
+        element: "Water",
+        weapon: "AR",
+        slug: "blue-ocean-neon",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 18,
+        name: "Neon: Vision Eye",
+        burst: "III",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x Charge Speed", "3x ATK", "2x Max Ammo"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 380,
+        name: "Nero",
+        burst: "II",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 193,
+        name: "Neve",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 4, s3: 1 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["4x ATK", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 261,
+        name: "Nihilister",
+        burst: "II",
+        element: "Fire",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 232,
+        name: "Noah",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 271,
+        name: "Noir",
+        burst: "III",
+        element: "Wind",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 5, s3: 4 },
+                    rec: { s1: 10, s2: 9, s3: 4 },
+                    max: { s1: 10, s2: 10, s3: 4 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "3x Max Ammo", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 430,
+        name: "Noise",
+        burst: "I",
+        element: "Electric",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 4, s3: 4 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 212,
+        name: "Novel",
+        burst: "II",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: null },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 1, s2: 1, s3: 7 },
+                    max: { s1: 4, s2: 4, s3: 10 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 812,
+        name: "Pascal",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 131,
+        name: "Pepper",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 580,
+        name: "Phantom",
+        burst: "III",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 4 },
+                    max: { s1: 10, s2: 10, s3: 7 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo"],
+                passable: ["2x Hit Rate", "2x Critical Damage", "2x Critical Rate", "2x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 30,
+        name: "Poli",
+        burst: "II",
+        element: "Water",
+        weapon: "SG",
+        slug: "poli-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 4, s3: 7 },
+                    max: { s1: 4, s2: 4, s3: 10 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 801,
+        name: "Power",
+        burst: "III",
+        element: "Fire",
+        weapon: "MG",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: ["4x ATK", "4x Charge Speed", "4x Elemental Damage"], passable: [] },
+        },
+    },
+    {
+        id: 601,
+        name: "Prika",
+        burst: "II",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 7 },
+                },
+                priority: "High",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 170,
+        name: "Privaty",
+        burst: "III",
+        element: "Water",
+        weapon: "AR",
+        slug: "privaty-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 313,
+        name: "Privaty: Unkind Maid",
+        burst: "III",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 4 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 7, s3: 4 },
+                    max: { s1: 10, s2: 10, s3: 7 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["3x Hit Rate", "3x Critical Rate", "3x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 302,
+        name: "Product 08",
+        burst: "I",
+        element: "Electric",
+        weapon: "SMG",
+        rarity: "R",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 303,
+        name: "Product 12",
+        burst: "III",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 307,
+        name: "Product 23",
+        burst: "II",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 402,
+        name: "Quency",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 403,
+        name: "Quency: Escape Queen",
+        burst: "III",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 8 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "3x Max Ammo", "2x Hit Rate"],
+                passable: ["2x Critical Damage", "2x Critical Rate", "1x Hit Rate", "1x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 33,
+        name: "Quiry",
+        burst: "III",
+        element: "Wind",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 822,
+        name: "Ram",
+        burst: "I",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 10,
+        name: "Rapi",
+        burst: "III",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 3, s2: 3, s3: 3 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 16,
+        name: "Rapi: Red Hood",
+        burst: "I",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 10 },
+                    max: null,
+                },
+                priority: "Meta",
+            },
+            overload: { priority: "Meta", ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 221,
+        name: "Rapunzel",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 226,
+        name: "Rapunzel: Pure Grace",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 851,
+        name: "Raven",
+        burst: "III",
+        element: "Iron",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "High",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["Critical Rate", "Critical Damage", "1x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 470,
+        name: "Red Hood",
+        burst: "All",
+        element: "Iron",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 10 },
+                    max: null,
+                },
+                priority: "Very High",
+            },
+            overload: {
+                priority: "Very High",
+                ideal: ["4x Elemental Damage", "2x Max Ammo", "4x ATK"],
+                passable: ["3x Charge Speed"],
+            },
+        },
+    },
+    {
+        id: 392,
+        name: "Rei",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 831,
+        name: "Rei Ayanami",
+        burst: "III",
+        element: "Fire",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 7 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Medium", ideal: ["4x ATK", "4x Elemental Damage", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 834,
+        name: "Rei Ayanami (Tentative Name)",
+        burst: "III",
+        element: "Wind",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"],
+                passable: ["2x Critical Damage", "2x Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 820,
+        name: "Rem",
+        burst: "II",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 4, s3: 7 },
+                    max: { s1: 10, s2: 7, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Very Low",
+                ideal: ["4x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 280,
+        name: "Rosanna",
+        burst: "I",
+        element: "Electric",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 283,
+        name: "Rosanna: Chic Ocean",
+        burst: "II",
+        element: "Wind",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 7, s3: 10 },
+                    max: { s1: 7, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 272,
+        name: "Rouge",
+        burst: "I",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: { priority: "Medium", ideal: ["2x Max Ammo"], passable: ["4x Elemental Damage", "4x ATK"] },
+        },
+    },
+    {
+        id: 240,
+        name: "Rumani",
+        burst: "I",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 200,
+        name: "Rupee",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 203,
+        name: "Rupee: Winter Shopper",
+        burst: "I",
+        element: "Electric",
+        weapon: "RL",
+        slug: "winter-shopper-rupee",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 282,
+        name: "Sakura",
+        burst: "I",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 4, s3: 4 },
+                    max: { s1: 4, s2: 4, s3: 7 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 836,
+        name: "Sakura Suzuhara",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        rarity: "SR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 1, s3: 1 }, rec: null, max: null },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 284,
+        name: "Sakura: Bloom in Summer",
+        burst: "III",
+        element: "Wind",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 5, s2: 7, s3: 7 },
+                    max: { s1: 7, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Very Low",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 222,
+        name: "Scarlet",
+        burst: "III",
+        element: "Electric",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 4, s3: 7 },
+                    max: { s1: 10, s2: 4, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Max Ammo"],
+                passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 225,
+        name: "Scarlet: Black Shadow",
+        burst: "III",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "SS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 10 },
+                    max: null,
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["1x Max Ammo", "1x Charge Speed", "4x Elemental Damage", "4x ATK"],
+                passable: ["3x Charge Speed"],
+            },
+        },
+    },
+    {
+        id: 22,
+        name: "Signal",
+        burst: "II",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 401,
+        name: "Sin",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: { s1: 4, s2: 4, s3: 4 } },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 620,
+        name: "Snow Crane",
+        burst: "II",
+        element: "Water",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: { s1: 4, s2: 4, s3: 4 }, rec: null, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 220,
+        name: "Snow White",
+        burst: "III",
+        element: "Iron",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: null,
+                    rec: { s1: 4, s2: 4, s3: 10 },
+                    max: { s1: 4, s2: 7, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "4x Critical Damage"],
+                passable: [],
+            },
+        },
+    },
+    {
+        id: 471,
+        name: "Snow White: Heavy Arms",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "SSS",
+            collection: { pvePriority: 10 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 7, s2: 7, s3: 7 },
+                    rec: { s1: 10, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Meta",
+            },
+            overload: {
+                priority: "Meta",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["1x Max Ammo", "4x Critical Rate", "4x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 224,
+        name: "Snow White: Innocent Days",
+        burst: "III",
+        element: "Iron",
+        weapon: "SR",
+        slug: "innocent-dayss-snow-white",
+        rarity: "SSR",
+        manufacturer: "Pilgrim",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: "Low", ideal: ["4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 312,
+        name: "Soda",
+        burst: "I",
+        element: "Fire",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 314,
+        name: "Soda: Twinkling Bunny",
+        burst: "III",
+        element: "Iron",
+        weapon: "SG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 4, s3: 4 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["2x Max Ammo", "4x Elemental Damage", "4x ATK"],
+                passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 300,
+        name: "Soldier EG",
+        burst: "III",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 301,
+        name: "Soldier FA",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Elysion",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 306,
+        name: "Soldier OW",
+        burst: "I",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 71,
+        name: "Soline",
+        burst: "III",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 1 },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 74,
+        name: "Soline: Frost Ticket",
+        burst: "I",
+        element: "Water",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 1, s3: 1 },
+                    rec: { s1: 8, s2: 1, s3: 1 },
+                    max: { s1: 10, s2: 4, s3: 1 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"],
+                passable: ["4x Critical Damage", "4x Critical Rate", "2x Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 532,
+        name: "Sora",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 7, s3: 4 },
+                    max: { s1: 4, s2: 10, s3: 4 },
+                },
+                priority: null,
+            },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 140,
+        name: "Sugar",
+        burst: "III",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "C",
+            collection: { pvePriority: 3 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 1, s2: 5, s3: 5 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: "Very Low", ideal: ["3x Max Ammo", "4x Elemental Damage", "4x ATK"], passable: [] },
+        },
+    },
+    {
+        id: 861,
+        name: "Takina Inoue",
+        burst: "II",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Abnormal",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"],
+                passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 451,
+        name: "Tia",
+        burst: "I",
+        element: "Iron",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 4, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 4 },
+                    rec: { s1: 10, s2: 4, s3: 4 },
+                    max: null,
+                },
+                priority: "Medium",
+            },
+            overload: { priority: "Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 192,
+        name: "Tove",
+        burst: "I",
+        element: "Water",
+        weapon: "SMG",
+        slug: "tove-treasure",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 9 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 3, s2: 4, s3: 4 },
+                    rec: { s1: 6, s2: 7, s3: 7 },
+                    max: { s1: 9, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "1x Max Ammo"],
+                passable: ["Max Ammo"],
+            },
+        },
+    },
+    {
+        id: 412,
+        name: "Trina",
+        burst: "II",
+        element: "Electric",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Supporter",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: 4 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 7, s3: 7 },
+                    max: { s1: 4, s2: 10, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Charge Speed", "3x Max Ammo"],
+                passable: ["Elemental Damage", "ATK"],
+            },
+        },
+    },
+    {
+        id: 501,
+        name: "Trony",
+        burst: "III",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Attacker",
+        build: {
+            bossing: "D",
+            collection: { pvePriority: 2 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 4, s2: 4, s3: 7 },
+                    max: { s1: 4, s2: 4, s3: 10 },
+                },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 316,
+        name: "Velvet",
+        burst: "II",
+        element: "Wind",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 6 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 5, s3: 1 },
+                    min: { s1: 1, s2: 10, s3: 1 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "4x ATK", "2x Max Ammo", "4x Charge Speed"],
+                passable: ["4x Critical Damage", "4x Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 91,
+        name: "Vesti",
+        burst: "III",
+        element: "Water",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: { start: { s1: 1, s2: 1, s3: 1 }, min: null, rec: { s1: 4, s2: 4, s3: 4 }, max: null },
+                priority: "Very Low",
+            },
+            overload: { priority: null, ideal: ["4x Elemental Damage", "4x ATK"], passable: ["4x Charge Speed"] },
+        },
+    },
+    {
+        id: 94,
+        name: "Vesti: Tactical Upgrade",
+        burst: "III",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 8 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 7, s3: 7 },
+                    rec: { s1: 7, s2: 10, s3: 10 },
+                    max: null,
+                },
+                priority: "Very High",
+            },
+            overload: {
+                priority: "Medium",
+                ideal: ["4x Elemental Damage", "2x Max Ammo", "2x Charge Speed", "4x ATK"],
+                passable: ["Max Ammo", "Critical Damage", "Critical Rate"],
+            },
+        },
+    },
+    {
+        id: 112,
+        name: "Viper",
+        burst: "II",
+        element: "Water",
+        weapon: "SG",
+        slug: "viper-treasure",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 4, s2: 4, s3: 4 },
+                    rec: { s1: 7, s2: 4, s3: 7 },
+                    max: { s1: 10, s2: 4, s3: 10 },
+                },
+                priority: "Low",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Max Ammo", "4x ATK", "4x Elemental Damage"],
+                passable: ["4x Hit Rate"],
+            },
+        },
+    },
+    {
+        id: 431,
+        name: "Volume",
+        burst: "I",
+        element: "Wind",
+        weapon: "SMG",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "A",
+            collection: { pvePriority: null },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 1, s3: 4 },
+                    rec: { s1: 1, s2: 4, s3: 4 },
+                    max: { s1: 1, s2: 7, s3: 7 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 201,
+        name: "Yan",
+        burst: "I",
+        element: "Fire",
+        weapon: "SR",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "E",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 171,
+        name: "Yulha",
+        burst: "III",
+        element: "Fire",
+        weapon: "RL",
+        rarity: "SSR",
+        manufacturer: "Tetra",
+        class: "Attacker",
+        build: {
+            bossing: "B",
+            collection: { pvePriority: 1 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 1, s2: 4, s3: 1 },
+                    rec: { s1: 1, s2: 7, s3: 1 },
+                    max: { s1: 1, s2: 10, s3: 1 },
+                },
+                priority: "Low",
+            },
+            overload: { priority: "Very Low", ideal: ["2x Max Ammo"], passable: [] },
+        },
+    },
+    {
+        id: 160,
+        name: "Yuni",
+        burst: "II",
+        element: "Fire",
+        weapon: "AR",
+        rarity: "SSR",
+        manufacturer: "Missilis",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 390,
+        name: "Zwei",
+        burst: "I",
+        element: "Electric",
+        weapon: "RL",
+        slug: "zwei-treasure",
+        rarity: "SSR",
+        manufacturer: "Elysion",
+        class: "Supporter",
+        build: {
+            bossing: "S",
+            collection: { pvePriority: 5 },
+            skill: {
+                pve: {
+                    start: { s1: 1, s2: 1, s3: 1 },
+                    min: { s1: 7, s2: 4, s3: 7 },
+                    rec: { s1: 10, s2: 7, s3: 7 },
+                    max: { s1: 10, s2: 10, s3: 10 },
+                },
+                priority: "Medium",
+            },
+            overload: {
+                priority: "Low",
+                ideal: ["4x Elemental Damage", "4x ATK"],
+                passable: ["2x Hit Rate", "2x Critical Rate", "2x Critical Damage"],
+            },
+        },
+    },
+    {
+        id: 304,
+        name: "iDoll Flower",
+        burst: "I",
+        element: "Wind",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Tetra",
+        class: "Defender",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 305,
+        name: "iDoll Ocean",
+        burst: "I",
+        element: "Water",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
+    {
+        id: 308,
+        name: "iDoll Sun",
+        burst: "III",
+        element: "Iron",
+        weapon: "AR",
+        rarity: "R",
+        manufacturer: "Tetra",
+        class: "Supporter",
+        build: {
+            bossing: "F",
+            collection: { pvePriority: null },
+            skill: { pve: { start: null, min: null, rec: null, max: null }, priority: null },
+            overload: { priority: null, ideal: [], passable: [] },
+        },
+    },
 ];
 
-const NIKKE_DB_MAP = new Map(NIKKE_DATABASE.map(n => [n.name, n]));
+const NIKKE_DB_MAP = new Map(NIKKE_DATABASE.map((n) => [n.name, n]));
 
 // All possible overload stats
 const ALL_LINES = [

@@ -1629,6 +1629,81 @@
                     width: 100%;
                 }
             }
+
+            /* ── Themed number steppers (replace native spin buttons) ── */
+            .nikke-stats-edit input[type="number"]::-webkit-outer-spin-button,
+            .nikke-stats-edit input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+            .nikke-stats-edit input[type="number"] {
+                -moz-appearance: textfield;
+                appearance: textfield;
+            }
+            .stepper {
+                display: flex;
+                align-items: stretch;
+                border: 1px solid #2d3f5e;
+                border-radius: 5px;
+                overflow: hidden;
+                background: #0f1117;
+            }
+            .stepper:focus-within {
+                border-color: #e2e8f0;
+            }
+            .stepper .stepper-input {
+                flex: 1;
+                min-width: 0;
+                text-align: center;
+                border: none;
+                border-radius: 0;
+                background: transparent;
+                color: #e2e8f0;
+                font-size: 12px;
+                padding: 4px 2px;
+            }
+            .stepper .stepper-input:focus {
+                outline: none;
+            }
+            .stepper-btn {
+                flex: none;
+                width: 26px;
+                border: none;
+                background: #1a2030;
+                color: #94a3b8;
+                font-size: 15px;
+                font-weight: 600;
+                line-height: 1;
+                cursor: pointer;
+                user-select: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition:
+                    background 0.12s,
+                    color 0.12s;
+            }
+            .stepper-btn:first-child {
+                border-right: 1px solid #2d3f5e;
+            }
+            .stepper-btn:last-child {
+                border-left: 1px solid #2d3f5e;
+            }
+            .stepper-btn:hover {
+                background: #243049;
+                color: #e2e8f0;
+            }
+            .stepper-btn:active {
+                background: #2d3a57;
+            }
+            .stepper-btn:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+            .stepper .stepper-input:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
         </style>
     </head>
     <body>
@@ -1682,7 +1757,7 @@
 
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('overview', event)">Overview</button>
-                <button class="tab" onclick="switchTab('gear', event)">Gear Tracker</button>
+                <button class="tab" onclick="switchTab('gear', event)">Nikkes</button>
                 <button class="tab" onclick="switchTab('raids', event)">Solo Raids</button>
                 <button class="tab" onclick="switchTab('priority', event)">Line Priorities</button>
                 <button class="tab" onclick="switchTab('weights', event)">Weights</button>
@@ -1705,7 +1780,7 @@
                     <div class="tut-step">
                         <div class="tut-step-num">1</div>
                         <div class="tut-step-text">
-                            <strong>Add your Nikkes</strong> — Use the "+ Add Nikke" button in the Gear Tracker to add
+                            <strong>Add your Nikkes</strong> — Use the "+ Add Nikke" button in the Nikkes tab to add
                             the characters you're gearing up.
                         </div>
                     </div>
@@ -2138,6 +2213,7 @@
                         rankSort: "efficiency",
                         rankSortAsc: false,
                         gearElementFilter: "",
+                        cubeLevels: {},
                     };
                     try {
                         localStorage.removeItem("nikke_v8");
@@ -2223,6 +2299,7 @@
             // Migrate/normalize state shape (works on both local and cloud data)
             function migrateState() {
                 if (!state.nikkes) state.nikkes = [];
+                if (!state.cubeLevels) state.cubeLevels = {};
                 if (state.elementalBoss === undefined) state.elementalBoss = true;
                 if (state.gearElementFilter === undefined) state.gearElementFilter = "";
                 if (state.gearBurstFilter === undefined) state.gearBurstFilter = "";
@@ -2300,6 +2377,7 @@
                         )
                             return;
                         state = imported;
+                        migrateState();
                         save();
                         render();
                     } catch (err) {
@@ -2415,15 +2493,17 @@
                     nikke.cube = entry.cube
                         ? {
                               tid: entry.cube.tid,
-                              lv: entry.cube.lv ?? 0,
-                              name: HARMONY_CUBE_NAMES[entry.cube.tid] ?? null,
+                              name: HARMONY_CUBES[entry.cube.tid] ?? null,
                           }
                         : null;
+                    if (entry.cube && entry.cube.lv != null) {
+                        state.cubeLevels[entry.cube.tid] = entry.cube.lv;
+                    }
                     nikke.doll = entry.doll
                         ? {
                               tid: entry.doll.tid,
                               lv: entry.doll.lv ?? 0,
-                              name: COLLECTION_DOLL_NAMES[entry.doll.tid] ?? null,
+                              name: COLLECTION_DOLLS.find((d) => d.id === entry.doll.tid)?.name ?? null,
                           }
                         : null;
                     if (entry.power != null) nikke.power = entry.power;
@@ -3271,17 +3351,97 @@
     </div>`;
                 }).join("");
 
+                // Editable Nikke stats: Power / Bond / Limit Break / Cores / Cube / Doll
+                const db = NIKKE_DB_MAP.get(nikke.name) || {};
+                const bondMax = (db.manufacturer === "Pilgrim" || nikke.name === "Rapi: Red Hood" || nikke.name === "Anis: Star") ? 40 : 30;
+                const lbMax = db.rarity === "SSR" ? 3 : db.rarity === "SR" ? 2 : 0;
+                const coresMax = db.rarity === "SSR" ? 7 : 0;
+                const fieldLabelCss =
+                    "font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em";
+                const fieldInputCss =
+                    "font-size:12px;padding:4px 6px;background:#0f1117;color:#e2e8f0;border:1px solid #2d3f5e;border-radius:5px;width:100%";
+                const cubeOpts = Object.entries(HARMONY_CUBES)
+                    .map(([tid, name]) => {
+                        const lv = (state.cubeLevels ?? {})[tid];
+                        const label = lv != null ? `${name} - Lv.${lv}` : name;
+                        return `<option value="${tid}" ${nikke.cube && String(nikke.cube.tid) === tid ? "selected" : ""}>${label}</option>`;
+                    })
+                    .join("");
+                const equippedDollDb = nikke.doll ? COLLECTION_DOLLS.find((d) => d.id === nikke.doll.tid) : null;
+                const isTreasureDoll = equippedDollDb != null && equippedDollDb.treasure != null;
+                const dollOpts = COLLECTION_DOLLS
+                    .filter((d) => {
+                        if (nikke.doll && nikke.doll.tid === d.id) return true;
+                        if (d.treasure != null) return d.treasure === nikke.name;
+                        return d.weapon === db.weapon;
+                    })
+                    .map(
+                        (d) =>
+                            `<option value="${d.id}" ${nikke.doll && nikke.doll.tid === d.id ? "selected" : ""}>[${d.rarity}] ${d.name}</option>`,
+                    )
+                    .join("");
+                const statsPanel = `
+    <div class="nikke-stats-edit" style="background:#0f1320;border:1px solid #1e2535;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px">
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Power</span>
+          <input type="text" inputmode="numeric" style="${fieldInputCss}" placeholder="—" value="${nikke.power != null ? nikke.power : ""}" onchange="updateNikkeStat('${nikke.id}','power',this.value)"/></label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Bond</span>
+          ${statStepperHtml(nikke.id, "bond", nikke.bond, 0, bondMax, false)}</label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Limit Break</span>
+          ${statStepperHtml(nikke.id, "limitBreak", nikke.limitBreak, 0, lbMax, false, undefined, lbMax === 0)}</label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Cores</span>
+          ${statStepperHtml(nikke.id, "cores", nikke.cores, 0, coresMax, false, undefined, coresMax === 0)}</label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:8px">
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Cube</span>
+          <div style="display:flex;gap:4px">
+            <select style="${fieldInputCss};flex:1" onchange="updateNikkeCube('${nikke.id}',this.value)"><option value="">— none —</option>${cubeOpts}</select>
+          </div></label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Doll</span>
+          <div style="display:flex;gap:4px">
+            <select style="${fieldInputCss};flex:1" onchange="updateNikkeDoll('${nikke.id}',this.value)"><option value="">— none —</option>${dollOpts}</select>
+            ${nikke.doll && !isTreasureDoll ? statStepperHtml(nikke.id, "doll", nikke.doll.lv, 0, 15, true, "flex:none;width:96px") : ""}
+          </div></label>
+      </div>
+    </div>`;
+
+                // Look up weapon / rarity / manufacturer / class from the database
+                const WEAPON_NAMES = {
+                    AR: "Assault Rifle",
+                    SMG: "Submachine Gun",
+                    SR: "Sniper Rifle",
+                    RL: "Rocket Launcher",
+                    MG: "Minigun",
+                    SG: "Shotgun",
+                };
+                const weaponCode = nikke.weapon || db.weapon || "";
+                const weaponLabel = WEAPON_NAMES[weaponCode] || weaponCode;
+                const metaItems = [
+                    nikke.element ? ["Element", nikke.element] : null,
+                    nikke.burst ? ["Burst", `B${burstNum(nikke.burst)}`] : null,
+                    weaponLabel ? ["Weapon", weaponLabel] : null,
+                    db.rarity ? ["Rarity", db.rarity] : null,
+                    db.manufacturer ? ["Manufacturer", db.manufacturer] : null,
+                    db.class ? ["Class", db.class] : null,
+                ].filter(Boolean);
+                const metaLine = metaItems.length
+                    ? '<div style="display:flex;flex-wrap:wrap;gap:3px 14px;font-size:13px;color:#cbd5e1;margin-top:5px">' +
+                      metaItems
+                          .map(
+                              ([k, v]) =>
+                                  `<span><span style="color:#64748b">${k}:</span> ${v}</span>`,
+                          )
+                          .join("") +
+                      "</div>"
+                    : "";
+
                 area.innerHTML = `
-    <div class="nikke-hdr" style="display:flex;align-items:center;justify-content:space-between">
-      <div style="display:flex;align-items:center;gap:10px">
+    <div class="nikke-hdr" style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
         ${nikkeIcon(nikke.name, 56)}
         <div>
-          <div style="font-size:14px;font-weight:600;color:#f1f5f9">${nikke.name}</div>
-          <div style="font-size:11px;color:#64748b">${nikke.element || ""} · B${burstNum(nikke.burst)}</div>
-          ${nikke.power != null ? '<div style="font-size:11px;color:#64748b">Power: ' + nikke.power.toLocaleString() + "</div>" : ""}
-          ${nikke.bond != null ? '<div style="font-size:11px;color:#64748b">Bond: ' + nikke.bond + " · LB: " + (nikke.limitBreak ?? 0) + " · Cores: " + (nikke.cores ?? 0) + "</div>" : ""}
-          ${nikke.cube ? '<div style="font-size:11px;color:#64748b">Cube: ' + (nikke.cube.name || "TID " + nikke.cube.tid) + " Lv" + nikke.cube.lv + "</div>" : ""}
-          ${nikke.doll ? '<div style="font-size:11px;color:#64748b">Doll: ' + (nikke.doll.name || "TID " + nikke.doll.tid) + " Lv" + nikke.doll.lv + "</div>" : ""}
+          <div style="font-size:22px;font-weight:700;color:#f1f5f9;line-height:1.15">${nikke.name}</div>
+          ${metaLine}
         </div>
       </div>
       <label class="elemental-toggle" title="Include Elemental Damage in gain calculations">
@@ -3289,8 +3449,116 @@
         <span>Elemental boss</span>
       </label>
     </div>
+    ${statsPanel}
     ${attrTable}
     ${slots}`;
+            }
+
+            // ── Editable Nikke stats (Power / Bond / Limit Break / Cores / Cube / Doll) ──
+            function getNikkeStatMax(n, field) {
+                const db = NIKKE_DB_MAP.get(n.name) || {};
+                if (field === "bond") return (db.manufacturer === "Pilgrim" || n.name === "Rapi: Red Hood" || n.name === "Anis: Star") ? 40 : 30;
+                if (field === "limitBreak") return db.rarity === "SSR" ? 3 : db.rarity === "SR" ? 2 : 0;
+                if (field === "cores") return db.rarity === "SSR" ? 7 : 0;
+                return null;
+            }
+            function clampNikkeStat(n, field, num) {
+                num = Math.max(0, num);
+                const max = getNikkeStatMax(n, field);
+                return max != null ? Math.min(max, num) : num;
+            }
+
+            // Builds a themed −/+ stepper (replaces the native number-input spin buttons).
+            // accessory=true targets a cube/doll level (field is "cube"/"doll").
+            function statStepperHtml(nid, field, value, min, max, accessory, extraStyle, disabled) {
+                const stepFn = accessory ? "stepNikkeAccessoryLv" : "stepNikkeStat";
+                const changeFn = accessory ? "updateNikkeAccessoryLv" : "updateNikkeStat";
+                const v = value != null ? value : "";
+                const maxAttr = max != null ? `max="${max}" ` : "";
+                const numVal = value != null ? Number(value) : null;
+                const minDis = (disabled || (numVal != null && numVal <= min)) ? " disabled" : "";
+                const maxDis = (disabled || (max != null && numVal != null && numVal >= max)) ? " disabled" : "";
+                const inputDis = disabled ? " disabled" : "";
+                return `<div class="stepper"${extraStyle ? ` style="${extraStyle}"` : ""}>
+            <button type="button" class="stepper-btn" tabindex="-1" onmousedown="event.preventDefault()" onclick="${stepFn}('${nid}','${field}',-1)"${minDis}>−</button>
+            <input class="stepper-input" type="number" inputmode="numeric" min="${min}" ${maxAttr}step="1" placeholder="—" value="${v}" onchange="${changeFn}('${nid}','${field}',this.value)"${inputDis}/>
+            <button type="button" class="stepper-btn" tabindex="-1" onmousedown="event.preventDefault()" onclick="${stepFn}('${nid}','${field}',1)"${maxDis}>+</button>
+          </div>`;
+            }
+
+            function updateNikkeStat(nid, field, val) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n) return;
+                const trimmed = String(val).trim();
+                if (trimmed === "") {
+                    n[field] = null;
+                } else {
+                    let num = parseInt(trimmed.replace(/[^0-9]/g, ""), 10);
+                    if (isNaN(num)) num = 0;
+                    n[field] = clampNikkeStat(n, field, num);
+                }
+                save();
+                renderGearMain(n);
+            }
+
+            function stepNikkeStat(nid, field, delta) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n) return;
+                const cur = n[field] != null ? n[field] : 0;
+                n[field] = clampNikkeStat(n, field, cur + delta);
+                save();
+                renderGearMain(n);
+            }
+
+            function stepNikkeAccessoryLv(nid, which, delta) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n || !n[which]) return;
+                const cur = n[which].lv != null ? n[which].lv : 0;
+                n[which].lv = Math.max(0, cur + delta);
+                save();
+                renderGearMain(n);
+            }
+
+            function updateNikkeCube(nid, tid) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n) return;
+                if (!tid) {
+                    n.cube = null;
+                } else {
+                    const tnum = parseInt(tid, 10);
+                    n.cube = {
+                        tid: tnum,
+                        name: HARMONY_CUBES[tnum] ?? null,
+                    };
+                }
+                save();
+                renderGearMain(n);
+            }
+
+            function updateNikkeDoll(nid, tid) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n) return;
+                if (!tid) {
+                    n.doll = null;
+                } else {
+                    const tnum = parseInt(tid, 10);
+                    n.doll = {
+                        tid: tnum,
+                        lv: n.doll && n.doll.lv != null ? n.doll.lv : 0,
+                        name: COLLECTION_DOLLS.find((d) => d.id === tnum)?.name ?? null,
+                    };
+                }
+                save();
+                renderGearMain(n);
+            }
+
+            function updateNikkeAccessoryLv(nid, which, val) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n || !n[which]) return;
+                let num = parseInt(String(val).replace(/[^0-9]/g, ""), 10);
+                if (isNaN(num) || num < 0) num = 0;
+                n[which].lv = num;
+                save();
             }
 
             // ── Bulk Paste ──────────────────────────────────────────────
@@ -4409,7 +4677,7 @@
                 // Switch to gear tab
                 document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
                 document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
-                document.querySelectorAll(".tab")[1].classList.add("active"); // Gear Tracker tab
+                document.querySelectorAll(".tab")[1].classList.add("active"); // Nikkes tab
                 document.getElementById("gear").classList.add("active");
                 renderGear();
                 // Scroll to the slot card and flash it
@@ -4516,12 +4784,12 @@
                 if (e.target === this) dismissMyData();
             });
 
-            // If brand new (0 Nikkes), show tutorial and land on Gear Tracker
+            // If brand new (0 Nikkes), show tutorial and land on Nikkes tab
             const _isNewUser = (function handleNewUser() {
                 if (state.nikkes.length === 0) {
                     // No data yet — always show the guide on load
                     showTutorial();
-                    // Auto-switch to Gear Tracker tab
+                    // Auto-switch to Nikkes tab
                     const tabBtnOrder = ["overview", "gear", "raids", "priority", "weights"];
                     const gearIdx = tabBtnOrder.indexOf("gear");
                     document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
