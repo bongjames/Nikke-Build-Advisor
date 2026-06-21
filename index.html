@@ -2655,11 +2655,28 @@
                     element,
                     weapon: weapon || (NIKKE_DB_MAP.get(name) && NIKKE_DB_MAP.get(name).weapon) || "AR",
                     gear,
-                    priorities: [
-                        { line: "ATK", tier: "Essential", count: 4, targetTier: 10 },
-                        { line: "Elemental Damage", tier: "Essential", count: 4, targetTier: 10 },
-                    ],
+                    priorities: dbOverloadToPriorities(name),
                 };
+            }
+
+            function dbOverloadToPriorities(name) {
+                const db = NIKKE_DB_MAP.get(name);
+                const overload = db && db.build && db.build.overload;
+                if (!overload) return [];
+                const { ideal = [], passable = [] } = overload;
+                return [
+                    ...ideal.map((e) => ({ line: e.name, tier: "Ideal", count: e.amount, targetTier: 10 })),
+                    ...passable.map((e) => ({ line: e.name, tier: "Passable", count: e.amount, targetTier: 10 })),
+                ];
+            }
+
+            function loadDbPriorities(nid) {
+                const n = state.nikkes.find((x) => x.id === nid);
+                if (!n) return;
+                n.priorities = dbOverloadToPriorities(n.name);
+                save();
+                renderPrioMain(n);
+                renderPriority();
             }
 
             // ============================================================
@@ -3998,7 +4015,10 @@
       Passable lines are always sacrificeable when Change Effects is needed.
     </div>
     ${rows}
-    <button class="add-line-btn" onclick="addPrio('${nikke.id}')">+ Add line</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="add-line-btn" onclick="addPrio('${nikke.id}')">+ Add line</button>
+      <button class="add-line-btn" onclick="loadDbPriorities('${nikke.id}')" title="Populate from database overload recommendations">↺ Load from database</button>
+    </div>
     <div class="info-note" style="margin-top:10px">
       DEF is always trash. Recommended reroll order: Line 3 (30%) → Line 2 (50%) → Line 1 (100% — last).
       No duplicate stats can appear on the same gear piece.
