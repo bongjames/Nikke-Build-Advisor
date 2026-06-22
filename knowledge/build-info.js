@@ -5,7 +5,7 @@
 //  change the semantic version number.
 // ============================================================
 window.BUILD_INFO = {
-  version: "1.0.3",
-  commit:  "1babcb7",
-  date:    "2026-06-21 14:43:48"
+  version: "1.0.0",
+  commit:  "d727256",
+  date:    "2026-06-22 08:15:38"
 };

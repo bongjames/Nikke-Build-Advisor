@@ -840,7 +840,7 @@
             /* ── Overview ── */
             .ov-grid {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(5, 1fr);
                 gap: 10px;
                 margin-bottom: 1.5rem;
             }
@@ -2880,8 +2880,14 @@
 
             let _overviewSearch = "";
 
-            // Which overview recommendation view is active: equipment | skills | dolls | bond
-            let _overviewView = "equipment";
+            // Which overview recommendation view is active: rockeff | equipment | skills | dolls | bond
+            let _overviewView = "rockeff";
+
+            // Element filter for Equipment/Skills/Dolls/Bond views
+            let _overviewElement = "";
+
+            // Solo Raid team filter for Equipment/Skills/Dolls/Bond views
+            let _overviewRaid = "";
 
             // Bossing tier ordering (best first) + the set of Nikke names that have a treasure doll.
             const BOSSING_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
@@ -2907,6 +2913,24 @@
                 renderOverview();
             }
 
+            function setOverviewElement(el) {
+                _overviewElement = el;
+                renderOverview();
+            }
+
+            function setOverviewRaid(raidId) {
+                _overviewRaid = raidId;
+                renderOverview();
+            }
+
+            // Returns a Set of nikke IDs in the selected overview raid, or null if no raid filter active
+            function getOverviewRaidIds() {
+                if (!_overviewRaid) return null;
+                const raid = state.raids.find((r) => r.id === _overviewRaid);
+                if (!raid) return null;
+                return new Set(raid.entries.filter((e) => (e.team || 0) !== 0).map((e) => e.nikkeId));
+            }
+
             function filterOverviewList() {
                 const input = document.getElementById("overview-search");
                 if (!input) return;
@@ -2916,8 +2940,8 @@
                 });
             }
 
-            // ── Overview view: Equipment (rock efficiency ranking) ──
-            function buildEquipmentView() {
+            // ── Overview view: Rock Efficiency (rock efficiency ranking) ──
+            function buildRockEffView() {
                 const nk = state.nikkes;
 
                 // Build efficiency ranking: gain% per rock for each incomplete slot
@@ -3062,6 +3086,77 @@
                 return { count: rankings.length, html };
             }
 
+            // ── Overview view: Equipment (Prydwen overload gear recommendations) ──
+            function buildEquipmentView() {
+                const rows = [];
+                const raidIds = getOverviewRaidIds();
+                for (const n of state.nikkes) {
+                    if (_overviewElement && n.element !== _overviewElement) continue;
+                    if (raidIds && !raidIds.has(n.id)) continue;
+                    const db = NIKKE_DB_MAP.get(n.name);
+                    const overload = db && db.build && db.build.overload;
+                    if (!overload || !overload.priority) continue;
+                    const { ideal = [], passable = [] } = overload;
+                    if (!ideal.length && !passable.length) continue;
+
+                    // Count how many of the recommended lines the user currently has across all gear
+                    const currentStats = {};
+                    SLOTS.forEach((slot) => {
+                        if (!n.gear[slot]) return;
+                        n.gear[slot].lines.forEach((l) => {
+                            if (l.stat) {
+                                currentStats[l.stat] = (currentStats[l.stat] || 0) + 1;
+                            }
+                        });
+                    });
+
+                    const defs = [];
+                    ideal.forEach((rec) => {
+                        const cur = currentStats[rec.name] || 0;
+                        if (cur < rec.amount) defs.push({ name: rec.name, cur, rec: rec.amount, tier: "Ideal" });
+                    });
+                    passable.forEach((rec) => {
+                        const cur = currentStats[rec.name] || 0;
+                        if (cur < rec.amount) defs.push({ name: rec.name, cur, rec: rec.amount, tier: "Passable" });
+                    });
+                    if (!defs.length) continue;
+                    rows.push({ n, defs, priority: overload.priority });
+                }
+                // Sort by overload priority then bossing power
+                const prioOrder = { Meta: 0, "Very High": 1, High: 2, Medium: 3, Low: 4, "Very Low": 5 };
+                rows.sort((a, b) => {
+                    const pa = prioOrder[a.priority] ?? 6;
+                    const pb = prioOrder[b.priority] ?? 6;
+                    if (pa !== pb) return pa - pb;
+                    return bossingPowerCmp(a, b);
+                });
+                const prioColor = (p) => {
+                    if (p === "Meta" || p === "Very High") return "#4ade80";
+                    if (p === "High") return "#86efac";
+                    if (p === "Medium") return "#fbbf24";
+                    return "#94a3b8";
+                };
+                const body = rows
+                    .map(
+                        (r, i) => `${ovRowOpen(r.n.id, r.n.name)}
+        <td style="color:#475569">${i + 1}</td>
+        ${ovNameCell(r.n.name)}
+        ${ovTierCell(bossingTierOf(r.n.name))}
+        <td style="color:${prioColor(r.priority)};font-weight:500">${r.priority}</td>
+        <td style="color:#f59e0b;font-weight:500">${r.defs.map((d) => `<span class="${d.tier === "Ideal" ? "prio-ideal" : "prio-passable"}" style="font-size:12px;padding:1px 5px;border-radius:3px;margin-right:4px">${d.name} ${d.cur}/${d.rec}</span>`).join("")}</td>
+      </tr>`,
+                    )
+                    .join("");
+                const html = rows.length
+                    ? `<div class="section-label" style="margin-top:1rem">Overload gear below Prydwen recommendation <span style="font-size:12px;color:#475569;font-weight:400">(current / recommended lines)</span></div>
+    <table class="attr-table" style="width:100%">
+      <tr><th>#</th><th>Nikke</th><th>Bossing</th><th>OL Priority</th><th>Lines below rec</th></tr>
+      ${body}
+    </table>`
+                    : `<div class="section-label" style="margin-top:1rem">Overload gear below Prydwen recommendation</div>${ovEmpty("All Nikke overload gear lines meet Prydwen recommendations.")}`;
+                return { count: rows.length, html };
+            }
+
             // ── Shared row/cell helpers for the Skills / Dolls / Bond overview views ──
             function bossingTierOf(name) {
                 const db = NIKKE_DB_MAP.get(name);
@@ -3086,7 +3181,10 @@
             // ── Overview view: Skills below the recommended levels ──
             function buildSkillsView() {
                 const rows = [];
+                const raidIds = getOverviewRaidIds();
                 for (const n of state.nikkes) {
+                    if (_overviewElement && n.element !== _overviewElement) continue;
+                    if (raidIds && !raidIds.has(n.id)) continue;
                     const db = NIKKE_DB_MAP.get(n.name);
                     const rec = db && db.build && db.build.skill && db.build.skill.pve ? db.build.skill.pve.rec : null;
                     if (!rec) continue;
@@ -3130,7 +3228,10 @@
             function buildDollsView() {
                 const S_IDX = BOSSING_ORDER.indexOf("S");
                 const rows = [];
+                const raidIds = getOverviewRaidIds();
                 for (const n of state.nikkes) {
+                    if (_overviewElement && n.element !== _overviewElement) continue;
+                    if (raidIds && !raidIds.has(n.id)) continue;
                     const db = NIKKE_DB_MAP.get(n.name);
                     if (!db) continue;
                     const rawIdx = bossingIdxOf(n.name);
@@ -3193,7 +3294,10 @@
             // ── Overview view: Bond below its LB-based max ──
             function buildBondView() {
                 const rows = [];
+                const raidIds = getOverviewRaidIds();
                 for (const n of state.nikkes) {
+                    if (_overviewElement && n.element !== _overviewElement) continue;
+                    if (raidIds && !raidIds.has(n.id)) continue;
                     const max = bondMaxFor(n);
                     if (max == null) continue; // R rarity → no bond
                     const cur = n.bond ?? 0;
@@ -3224,26 +3328,48 @@
 
             function renderOverview() {
                 const el = document.getElementById("overview");
-                const view = _overviewView || "equipment";
+                const view = _overviewView || "rockeff";
                 const views = {
+                    rockeff: { label: "Rock Efficiency", data: buildRockEffView() },
                     equipment: { label: "Equipment", data: buildEquipmentView() },
                     skills: { label: "Skills", data: buildSkillsView() },
                     dolls: { label: "Dolls", data: buildDollsView() },
                     bond: { label: "Bond", data: buildBondView() },
                 };
-                const active = views[view] || views.equipment;
+                const active = views[view] || views.rockeff;
                 const btn = (key) =>
                     `<button type="button" class="metric-card ov-btn${view === key ? " active" : ""}" onclick="setOverviewView('${key}')">
         <div class="metric-val">${views[key].data.count}</div><div class="metric-label">${views[key].label}</div></button>`;
+                const showElementFilter = ["equipment", "skills", "dolls", "bond"].includes(view);
+                const raidOpts = [...state.raids]
+                    .reverse()
+                    .map((r) => {
+                        const dn = `${r.season ? "S" + r.season + " · " : ""}${r.name}${r.element ? " — " + r.element : ""}`;
+                        return `<option value="${r.id}" ${_overviewRaid === r.id ? "selected" : ""}>${dn}</option>`;
+                    })
+                    .join("");
+                const elementFilter = showElementFilter
+                    ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <select class="form-input" style="font-size:13px;padding:4px 8px;width:auto" onchange="setOverviewElement(this.value)">
+        <option value="">All Elements</option>
+        ${NIKKE_ELEMENTS.map((e) => `<option value="${e}" ${_overviewElement === e ? "selected" : ""}>${e}</option>`).join("")}
+      </select>
+      ${state.raids.length ? `<select class="form-input" style="font-size:13px;padding:4px 8px;width:auto" onchange="setOverviewRaid(this.value)">
+        <option value="">All Solo Raid Teams</option>${raidOpts}
+      </select>` : ""}
+    </div>`
+                    : "";
                 el.innerHTML = `
     <div class="ov-grid">
+      ${btn("rockeff")}
       ${btn("equipment")}
       ${btn("skills")}
       ${btn("dolls")}
       ${btn("bond")}
     </div>
+    ${elementFilter}
     ${active.data.html}`;
-                if (view === "equipment" && _overviewSearch) filterOverviewList();
+                if (view === "rockeff" && _overviewSearch) filterOverviewList();
             }
 
             function toggleElementalBoss(checked) {
