@@ -173,7 +173,8 @@
                 flex-direction: column;
                 gap: 4px;
                 flex: 1;
-                min-height: 200px;
+                min-height: 0;
+                max-height: calc(100vh - 280px);
                 overflow-y: auto;
                 overflow-x: hidden;
             }
@@ -859,6 +860,29 @@
             .metric-label {
                 font-size: 13px;
                 color: #64748b;
+            }
+            /* Overview recommendation toggle buttons (reuse the metric-card look) */
+            .ov-btn {
+                font: inherit;
+                color: inherit;
+                width: 100%;
+                cursor: pointer;
+                transition:
+                    border-color 0.15s,
+                    background 0.15s;
+            }
+            .ov-btn:hover {
+                border-color: #2d3f5e;
+            }
+            .ov-btn.active {
+                border-color: #3b82f6;
+                background: #13243f;
+            }
+            .ov-btn.active .metric-val {
+                color: #60a5fa;
+            }
+            .ov-btn.active .metric-label {
+                color: #93c5fd;
             }
             .ov-nikke {
                 background: #151c2b;
@@ -2666,6 +2690,9 @@
                     if (entry.bond != null) nikke.bond = entry.bond;
                     if (entry.limitBreak != null) nikke.limitBreak = entry.limitBreak;
                     if (entry.cores != null) nikke.cores = entry.cores;
+                    if (entry.skill1 != null) nikke.skill1 = entry.skill1;
+                    if (entry.skill2 != null) nikke.skill2 = entry.skill2;
+                    if (entry.ultiSkill != null) nikke.skill3 = entry.ultiSkill;
 
                     if (!hasGear) continue;
 
@@ -2853,6 +2880,33 @@
 
             let _overviewSearch = "";
 
+            // Which overview recommendation view is active: equipment | skills | dolls | bond
+            let _overviewView = "equipment";
+
+            // Bossing tier ordering (best first) + the set of Nikke names that have a treasure doll.
+            const BOSSING_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
+            const TREASURE_NAMES = new Set(COLLECTION_DOLLS.filter((d) => d.treasure).map((d) => d.treasure));
+
+            // Index of a Nikke's bossing tier within BOSSING_ORDER (lower = stronger); 999 if unknown.
+            function bossingIdxOf(name) {
+                const db = NIKKE_DB_MAP.get(name);
+                const b = db && db.build ? db.build.bossing : null;
+                const i = b ? BOSSING_ORDER.indexOf(b) : -1;
+                return i === -1 ? 999 : i;
+            }
+
+            // Comparator: bossing tier ascending (stronger first), then power descending.
+            function bossingPowerCmp(a, b) {
+                const d = bossingIdxOf(a.n.name) - bossingIdxOf(b.n.name);
+                if (d) return d;
+                return (b.n.power ?? 0) - (a.n.power ?? 0);
+            }
+
+            function setOverviewView(v) {
+                _overviewView = v;
+                renderOverview();
+            }
+
             function filterOverviewList() {
                 const input = document.getElementById("overview-search");
                 if (!input) return;
@@ -2862,20 +2916,9 @@
                 });
             }
 
-            function renderOverview() {
-                const el = document.getElementById("overview");
+            // ── Overview view: Equipment (rock efficiency ranking) ──
+            function buildEquipmentView() {
                 const nk = state.nikkes;
-                let total = nk.length * 4,
-                    done = 0,
-                    partial = 0;
-                nk.forEach((n) =>
-                    SLOTS.forEach((s) => {
-                        const st = dotStatus(n, s);
-                        if (st === "done") done++;
-                        else if (st === "partial") partial++;
-                    }),
-                );
-                const pct = total ? Math.round((done / total) * 100) : 0;
 
                 // Build efficiency ranking: gain% per rock for each incomplete slot
                 // If a raid is selected, filter to only those nikkes and weight by damage
@@ -3007,13 +3050,7 @@
                       })()
                     : `<div class="section-label" style="margin-top:1.5rem">Rock efficiency ranking${raidSelector}</div><div style="font-size:14px;color:#475569">No actionable slots to rank</div>`;
 
-                el.innerHTML = `
-    <div class="ov-grid">
-      <div class="metric-card"><div class="metric-val">${nk.length}</div><div class="metric-label">Nikkes</div></div>
-      <div class="metric-card"><div class="metric-val" style="color:#4ade80">${done}</div><div class="metric-label">Slots done</div></div>
-      <div class="metric-card"><div class="metric-val" style="color:#f59e0b">${partial}</div><div class="metric-label">In progress</div></div>
-      <div class="metric-card"><div class="metric-val">${pct}%</div><div class="metric-label">Completion</div></div>
-    </div>
+                const html = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
       <input id="overview-search" class="form-input" placeholder="Search Nikke..." value="${_overviewSearch.replace(/"/g, "&quot;")}" oninput="filterOverviewList()" style="font-size:13px;padding:4px 8px;width:160px"/>
       <label class="elemental-toggle" title="Include Elemental Damage in gain calculations" style="margin-left:auto">
@@ -3022,7 +3059,191 @@
       </label>
     </div>
     ${rankingHtml}`;
-                if (_overviewSearch) filterOverviewList();
+                return { count: rankings.length, html };
+            }
+
+            // ── Shared row/cell helpers for the Skills / Dolls / Bond overview views ──
+            function bossingTierOf(name) {
+                const db = NIKKE_DB_MAP.get(name);
+                return (db && db.build && db.build.bossing) || null;
+            }
+            function ovRowOpen(nikkeId, name) {
+                return `<tr class="rank-row" data-name="${String(name).toLowerCase()}" onclick="goToGearNikke('${nikkeId}')">`;
+            }
+            function ovNameCell(name) {
+                return `<td style="font-weight:500"><div style="display:flex;align-items:center;gap:6px">${nikkeIcon(name, 22)}<span>${name}</span></div></td>`;
+            }
+            function ovTierCell(tierLabel) {
+                return `<td style="color:#94a3b8">${tierLabel || "—"}</td>`;
+            }
+            function ovPowerCell(power) {
+                return `<td style="color:#94a3b8">${power != null ? Number(power).toLocaleString() : "—"}</td>`;
+            }
+            function ovEmpty(msg) {
+                return `<div style="font-size:14px;color:#475569;padding:6px 0">${msg}</div>`;
+            }
+
+            // ── Overview view: Skills below the recommended levels ──
+            function buildSkillsView() {
+                const rows = [];
+                for (const n of state.nikkes) {
+                    const db = NIKKE_DB_MAP.get(n.name);
+                    const rec = db && db.build && db.build.skill && db.build.skill.pve ? db.build.skill.pve.rec : null;
+                    if (!rec) continue;
+                    const cur = { s1: n.skill1 ?? 0, s2: n.skill2 ?? 0, s3: n.skill3 ?? 0 };
+                    const defs = [];
+                    [
+                        ["s1", "S1"],
+                        ["s2", "S2"],
+                        ["s3", "S3"],
+                    ].forEach(([k, lbl]) => {
+                        if (rec[k] != null && cur[k] < rec[k]) defs.push(`${lbl} ${cur[k]}→${rec[k]}`);
+                    });
+                    if (!defs.length) continue;
+                    rows.push({ n, defs });
+                }
+                rows.sort(bossingPowerCmp);
+                const body = rows
+                    .map(
+                        (r, i) => `${ovRowOpen(r.n.id, r.n.name)}
+        <td style="color:#475569">${i + 1}</td>
+        ${ovNameCell(r.n.name)}
+        ${ovTierCell(bossingTierOf(r.n.name))}
+        ${ovPowerCell(r.n.power)}
+        <td style="color:#f59e0b;font-weight:500">${r.defs.join("&nbsp;&nbsp;&nbsp;")}</td>
+      </tr>`,
+                    )
+                    .join("");
+                const html = rows.length
+                    ? `<div class="section-label" style="margin-top:1rem">Skills below recommended <span style="font-size:12px;color:#475569;font-weight:400">(current → recommended)</span></div>
+    <table class="attr-table" style="width:100%">
+      <tr><th>#</th><th>Nikke</th><th>Bossing</th><th>Power</th><th>Skills below rec</th></tr>
+      ${body}
+    </table>`
+                    : `<div class="section-label" style="margin-top:1rem">Skills below recommended</div>${ovEmpty("All Nikke skills meet the recommended levels.")}`;
+                return { count: rows.length, html };
+            }
+
+            // ── Overview view: Dolls for high-bossing Nikkes ──
+            // Bossing ≥ S need an SR doll at Lv15. Treasure Nikkes count one tier higher
+            // and should run their treasure doll instead of the standard SR doll.
+            function buildDollsView() {
+                const S_IDX = BOSSING_ORDER.indexOf("S");
+                const rows = [];
+                for (const n of state.nikkes) {
+                    const db = NIKKE_DB_MAP.get(n.name);
+                    if (!db) continue;
+                    const rawIdx = bossingIdxOf(n.name);
+                    const isTreasure = TREASURE_NAMES.has(n.name);
+                    const effIdx = isTreasure && rawIdx < 999 ? Math.max(0, rawIdx - 1) : rawIdx;
+                    if (effIdx > S_IDX) continue;
+                    let recDoll, done;
+                    if (isTreasure) {
+                        recDoll = COLLECTION_DOLLS.find((d) => d.treasure === n.name);
+                        done = !!(n.doll && recDoll && n.doll.tid === recDoll.id);
+                    } else {
+                        recDoll = COLLECTION_DOLLS.find((d) => d.rarity === "SR" && d.weapon === db.weapon);
+                        const eq = n.doll ? COLLECTION_DOLLS.find((d) => d.id === n.doll.tid) : null;
+                        done = !!(eq && eq.rarity === "SR" && n.doll.lv === 15);
+                    }
+                    if (done) continue;
+                    const boosted = isTreasure && rawIdx < 999 && effIdx < rawIdx;
+                    rows.push({ n, recDoll, isTreasure, effIdx, boosted });
+                }
+                rows.sort((a, b) => {
+                    if (a.effIdx !== b.effIdx) return a.effIdx - b.effIdx;
+                    return (b.n.power ?? 0) - (a.n.power ?? 0);
+                });
+                const curDollLabel = (n) => {
+                    if (!n.doll) return `<span style="color:#64748b">None</span>`;
+                    const d = COLLECTION_DOLLS.find((x) => x.id === n.doll.tid);
+                    if (!d) return `<span style="color:#64748b">None</span>`;
+                    const lv = d.treasure ? "" : ` Lv${n.doll.lv ?? 0}`;
+                    return `[${d.rarity}] ${d.name}${lv}`;
+                };
+                const recDollLabel = (r) => {
+                    if (!r.recDoll) return `<span style="color:#64748b">—</span>`;
+                    const lv = r.isTreasure ? "" : " Lv15";
+                    return `[${r.recDoll.rarity}] ${r.recDoll.name}${lv}`;
+                };
+                const tierCell = (r) =>
+                    `<td style="color:#94a3b8">${BOSSING_ORDER[r.effIdx] ?? "—"}${r.boosted ? ` <span style="color:#60a5fa;font-size:11px">★</span>` : ""}</td>`;
+                const body = rows
+                    .map(
+                        (r, i) => `${ovRowOpen(r.n.id, r.n.name)}
+        <td style="color:#475569">${i + 1}</td>
+        ${ovNameCell(r.n.name)}
+        ${tierCell(r)}
+        ${ovPowerCell(r.n.power)}
+        <td style="color:#94a3b8">${curDollLabel(r.n)}</td>
+        <td style="color:#4ade80">${recDollLabel(r)}</td>
+      </tr>`,
+                    )
+                    .join("");
+                const html = rows.length
+                    ? `<div class="section-label" style="margin-top:1rem">Doll recommendations <span style="font-size:12px;color:#475569;font-weight:400">(bossing ≥ S; ★ = treasure boost)</span></div>
+    <table class="attr-table" style="width:100%">
+      <tr><th>#</th><th>Nikke</th><th>Bossing</th><th>Power</th><th>Current doll</th><th>Recommended</th></tr>
+      ${body}
+    </table>`
+                    : `<div class="section-label" style="margin-top:1rem">Doll recommendations</div>${ovEmpty("Every bossing ≥ S Nikke has its recommended doll.")}`;
+                return { count: rows.length, html };
+            }
+
+            // ── Overview view: Bond below its LB-based max ──
+            function buildBondView() {
+                const rows = [];
+                for (const n of state.nikkes) {
+                    const max = bondMaxFor(n);
+                    if (max == null) continue; // R rarity → no bond
+                    const cur = n.bond ?? 0;
+                    if (cur >= max) continue;
+                    rows.push({ n, cur, max });
+                }
+                rows.sort(bossingPowerCmp);
+                const body = rows
+                    .map(
+                        (r, i) => `${ovRowOpen(r.n.id, r.n.name)}
+        <td style="color:#475569">${i + 1}</td>
+        ${ovNameCell(r.n.name)}
+        ${ovTierCell(bossingTierOf(r.n.name))}
+        ${ovPowerCell(r.n.power)}
+        <td><span style="color:#f59e0b;font-weight:600">${r.cur}</span><span style="color:#475569"> / ${r.max}</span></td>
+      </tr>`,
+                    )
+                    .join("");
+                const html = rows.length
+                    ? `<div class="section-label" style="margin-top:1rem">Bond below max <span style="font-size:12px;color:#475569;font-weight:400">(current / max for limit break)</span></div>
+    <table class="attr-table" style="width:100%">
+      <tr><th>#</th><th>Nikke</th><th>Bossing</th><th>Power</th><th>Bond</th></tr>
+      ${body}
+    </table>`
+                    : `<div class="section-label" style="margin-top:1rem">Bond below max</div>${ovEmpty("Every Nikke's bond is at max for its limit break.")}`;
+                return { count: rows.length, html };
+            }
+
+            function renderOverview() {
+                const el = document.getElementById("overview");
+                const view = _overviewView || "equipment";
+                const views = {
+                    equipment: { label: "Equipment", data: buildEquipmentView() },
+                    skills: { label: "Skills", data: buildSkillsView() },
+                    dolls: { label: "Dolls", data: buildDollsView() },
+                    bond: { label: "Bond", data: buildBondView() },
+                };
+                const active = views[view] || views.equipment;
+                const btn = (key) =>
+                    `<button type="button" class="metric-card ov-btn${view === key ? " active" : ""}" onclick="setOverviewView('${key}')">
+        <div class="metric-val">${views[key].data.count}</div><div class="metric-label">${views[key].label}</div></button>`;
+                el.innerHTML = `
+    <div class="ov-grid">
+      ${btn("equipment")}
+      ${btn("skills")}
+      ${btn("dolls")}
+      ${btn("bond")}
+    </div>
+    ${active.data.html}`;
+                if (view === "equipment" && _overviewSearch) filterOverviewList();
             }
 
             function toggleElementalBoss(checked) {
@@ -3613,10 +3834,8 @@
 
                 // Editable Nikke stats: Power / Bond / Limit Break / Cores / Cube / Doll
                 const db = NIKKE_DB_MAP.get(nikke.name) || {};
-                const bondMax =
-                    db.manufacturer === "Pilgrim" || nikke.name === "Rapi: Red Hood" || nikke.name === "Anis: Star"
-                        ? 40
-                        : 30;
+                const bondMax = bondMaxFor(nikke) ?? 0;
+                const skillRec = db.build && db.build.skill && db.build.skill.pve ? db.build.skill.pve.rec : null;
                 const lbMax = db.rarity === "SSR" ? 3 : db.rarity === "SR" ? 2 : 0;
                 const coresMax = db.rarity === "SSR" ? 7 : 0;
                 const fieldLabelCss = "font-size:12px;color:#64748b;letter-spacing:.04em";
@@ -3661,7 +3880,15 @@
         <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Cores</span>
           ${statStepperHtml(nikke.id, "cores", nikke.cores, 0, coresMax, false, undefined, coresMax === 0)}</label>
         <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Bond</span>
-          ${statStepperHtml(nikke.id, "bond", nikke.bond, 0, bondMax, false)}</label>
+          ${statStepperHtml(nikke.id, "bond", nikke.bond, 0, bondMax, false, undefined, bondMax === 0)}</label>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px;margin-top:8px">
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Skill 1${skillRec ? ` <span style="color:#475569">· rec ${skillRec.s1}</span>` : ""}</span>
+          ${statStepperHtml(nikke.id, "skill1", nikke.skill1, 1, 10, false)}</label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Skill 2${skillRec ? ` <span style="color:#475569">· rec ${skillRec.s2}</span>` : ""}</span>
+          ${statStepperHtml(nikke.id, "skill2", nikke.skill2, 1, 10, false)}</label>
+        <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Skill 3${skillRec ? ` <span style="color:#475569">· rec ${skillRec.s3}</span>` : ""}</span>
+          ${statStepperHtml(nikke.id, "skill3", nikke.skill3, 1, 10, false)}</label>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:8px">
         <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Cube</span>
@@ -3716,15 +3943,24 @@
                 }
             }
 
-            // ── Editable Nikke stats (Power / Bond / Limit Break / Cores / Cube / Doll) ──
+            // ── Editable Nikke stats (Power / Bond / Limit Break / Cores / Cube / Doll / Skills) ──
+            // Max bond is LB-based: (LB+1)*10 → LB0=10, LB1=20, LB2=30, LB3=40.
+            // Only Pilgrim / over-spec Nikkes reach 40 at LB3; everyone else caps at 30.
+            // R Nikkes have no bond (returns null).
+            function bondMaxFor(n) {
+                const db = NIKKE_DB_MAP.get(n.name) || {};
+                if (db.rarity === "R") return null;
+                const lb = n.limitBreak != null ? n.limitBreak : 0;
+                const base = (lb + 1) * 10;
+                const elevated = db.manufacturer === "Pilgrim" || db.overspec === true;
+                return Math.min(base, elevated ? 40 : 30);
+            }
             function getNikkeStatMax(n, field) {
                 const db = NIKKE_DB_MAP.get(n.name) || {};
-                if (field === "bond")
-                    return db.manufacturer === "Pilgrim" || n.name === "Rapi: Red Hood" || n.name === "Anis: Star"
-                        ? 40
-                        : 30;
+                if (field === "bond") return bondMaxFor(n) ?? 0;
                 if (field === "limitBreak") return db.rarity === "SSR" ? 3 : db.rarity === "SR" ? 2 : 0;
                 if (field === "cores") return db.rarity === "SSR" ? 7 : 0;
+                if (field === "skill1" || field === "skill2" || field === "skill3") return 10;
                 return null;
             }
             function clampNikkeStat(n, field, num) {
@@ -4898,9 +5134,6 @@
             function renderWishlist() {
                 const el = document.getElementById("wishlist");
 
-                const BOSSING_ORDER = ["SSS", "SS", "S", "A", "B", "C", "D", "E", "F"];
-                const TREASURE_NAMES = new Set(COLLECTION_DOLLS.filter((d) => d.treasure).map((d) => d.treasure));
-
                 const rosterByName = {};
                 for (const n of state.nikkes ?? []) rosterByName[n.name] = n;
 
@@ -5052,6 +5285,8 @@
                 url.searchParams.set("tab", "gear");
                 history.replaceState(null, "", url);
                 renderGear();
+                // Scroll back to the top so the Nikke detail screen starts at its header
+                window.scrollTo({ top: 0, behavior: "smooth" });
             }
 
             function goToGearSlot(nikkeId, slot) {
