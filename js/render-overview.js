@@ -297,13 +297,13 @@ function buildEquipmentView() {
         )
         .join("");
     const html = rows.length
-        ? `<div class="section-label" style="margin-top:1rem">Overload gear below Prydwen recommendation <span style="font-size:12px;color:#475569;font-weight:400">(current / recommended lines)</span></div>
+        ? `<div class="section-label" style="margin-top:1rem">Overload gear recommendations<span style="font-size:12px;color:#475569;font-weight:400"> (current / recommended lines)</span></div>
     <table class="attr-table" style="width:100%;table-layout:fixed">
       <colgroup><col style="width:5%"><col style="width:30%"><col style="width:15%"><col style="width:50%"></colgroup>
       <tr><th>Prio.</th><th>Nikke</th><th>OL Priority</th><th>Lines below rec</th></tr>
       ${body}
     </table>`
-        : `<div class="section-label" style="margin-top:1rem">Overload gear below Prydwen recommendation</div>${ovEmpty("All Nikke overload gear lines meet Prydwen recommendations.")}`;
+        : `<div class="section-label" style="margin-top:1rem">Overload gear recommendations</div>${ovEmpty("All Nikke overload gear lines meet recommendations.")}`;
     return { count: rows.length, html };
 }
 
@@ -375,7 +375,7 @@ function buildSkillsView() {
         )
         .join("");
     const html = rows.length
-        ? `<div class="section-label" style="margin-top:1rem">Skills below recommended <span style="font-size:12px;color:#475569;font-weight:400">(current → recommended)</span></div>
+        ? `<div class="section-label" style="margin-top:1rem">Skill recommendedations<span style="font-size:12px;color:#475569;font-weight:400"> (current → recommended)</span></div>
     <table class="attr-table" style="width:100%;table-layout:fixed">
       <colgroup><col style="width:5%"><col style="width:30%"><col style="width:12%"><col style="width:53%"></colgroup>
       <tr><th>Prio.</th><th>Nikke</th><th>Power</th><th>Skills below rec</th></tr>
@@ -446,7 +446,7 @@ function buildDollsView() {
         )
         .join("");
     const html = rows.length
-        ? `<div class="section-label" style="margin-top:1rem">Doll recommendations <span style="font-size:12px;color:#475569;font-weight:400">(★ = treasure boost)</span></div>
+        ? `<div class="section-label" style="margin-top:1rem">Doll recommendations<span style="font-size:12px;color:#475569;font-weight:400"> (★ = treasure boost)</span></div>
     <table class="attr-table" style="width:100%;table-layout:fixed">
       <colgroup><col style="width:5%"><col style="width:30%"><col style="width:12%"><col style="width:27%"><col style="width:26%"></colgroup>
       <tr><th>Prio.</th><th>Nikke</th><th>Power</th><th>Current doll</th><th>Recommended</th></tr>
@@ -481,13 +481,13 @@ function buildBondView() {
         )
         .join("");
     const html = rows.length
-        ? `<div class="section-label" style="margin-top:1rem">Bond below max <span style="font-size:12px;color:#475569;font-weight:400">(current / max for limit break)</span></div>
+        ? `<div class="section-label" style="margin-top:1rem">Bond recommendations<span style="font-size:12px;color:#475569;font-weight:400"> (current / max for limit break)</span></div>
     <table class="attr-table" style="width:100%;table-layout:fixed">
       <colgroup><col style="width:5%"><col style="width:30%"><col style="width:12%"><col style="width:53%"></colgroup>
       <tr><th>Prio.</th><th>Nikke</th><th>Power</th><th>Bond</th></tr>
       ${body}
     </table>`
-        : `<div class="section-label" style="margin-top:1rem">Bond below max</div>${ovEmpty("Every Nikke's bond is at max for its limit break.")}`;
+        : `<div class="section-label" style="margin-top:1rem">Bond recommendations</div>${ovEmpty("Every Nikke's bond is at max for its limit break.")}`;
     return { count: rows.length, html };
 }
 

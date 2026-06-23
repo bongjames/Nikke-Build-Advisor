@@ -522,17 +522,12 @@ function _applyScraperImport(scraperData, opts) {
     save();
     render();
 
-    const noGearNote = addedNoGear ? ` · ${addedNoGear} added (no gear yet)` : "";
-    const summary = `${added} added · ${updated} updated${noGearNote}`;
+    const totalAdded = added + addedNoGear;
+    const summary = `${totalAdded} added · ${updated} updated`;
     if (silent) {
         _showExtImportToast("Extension import complete — " + summary);
     } else {
-        const noGearLine = addedNoGear
-            ? `\n• ${addedNoGear} Nikke(s) added to roster (no gear data yet)`
-            : "";
-        alert(
-            `Import complete!\n\n• ${added} Nikke(s) added with gear\n• ${updated} Nikke(s) updated${noGearLine}`,
-        );
+        alert(`Import complete!\n\n• ${totalAdded} Nikke(s) added\n• ${updated} Nikke(s) updated`);
     }
 }
 
