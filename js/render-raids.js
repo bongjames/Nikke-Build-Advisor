@@ -56,14 +56,6 @@ function addRaid() {
     const elemSel = document.getElementById("raid-element-input");
     const element = elemSel ? elemSel.value : "";
     const raid = { id: "r" + Date.now(), name, season, element, entries: [] };
-    // Auto-add all roster Nikkes matching the selected element
-    if (element) {
-        state.nikkes
-            .filter((n) => n.element === element)
-            .forEach((n) => {
-                raid.entries.push({ nikkeId: n.id, damage: 0 });
-            });
-    }
     state.raids.push(raid);
     state.selRaidEdit = raid.id;
     save();
@@ -113,7 +105,7 @@ function saveEditRaid(id) {
 function renderRaidMain(raid) {
     const area = document.getElementById("raid-main");
     const raidDisplayName = `${raid.season ? "Season " + raid.season + " · " : ""}${raid.name}${raid.element ? " — " + elemIcon(raid.element) + " " + raid.element + " Weak" : ""}`;
-    const viewMode = state.raidViewMode || "damage"; // 'teams' or 'damage'
+    const viewMode = state.raidViewMode || "teams"; // 'teams' or 'recommend'
 
     // Sort unassigned entries by damage
     const sortMode = state.raidSortMode || "damage";
@@ -133,14 +125,9 @@ function renderRaidMain(raid) {
 
     const totalDmg = raid.entries.reduce((s, e) => s + (e.damage || 0), 0);
 
-    // Build nikke selector (exclude already added)
-    const addedIds = new Set(raid.entries.map((e) => e.nikkeId));
-    const available = state.nikkes.filter((n) => !addedIds.has(n.id));
-    const nikkeOpts = available.map((n) => `<option value="${n.id}">${n.name}</option>`).join("");
-
     // View toggle
     const viewToggle = `<div style="display:flex;gap:4px">
-    <button class="btn-sm${viewMode === "damage" ? " active-sort" : ""}" onclick="setRaidView('damage')" style="font-size:12px;padding:2px 8px">Damage</button>
+    <button class="btn-sm${viewMode === "recommend" ? " active-sort" : ""}" onclick="setRaidView('recommend')" style="font-size:12px;padding:2px 8px">Recommendations</button>
     <button class="btn-sm${viewMode === "teams" ? " active-sort" : ""}" onclick="setRaidView('teams')" style="font-size:12px;padding:2px 8px">Teams</button>
   </div>`;
 
@@ -222,90 +209,172 @@ function renderRaidMain(raid) {
       </div>
     </div>`;
     } else {
-        // ── DAMAGE VIEW: flat ranked list ──
-        const dmgSortMode = state.raidDmgSortMode || "damage";
-        const withIdx = raid.entries.map((e, i) => ({ ...e, origIdx: i }));
-
-        // Compute potential for sorting
-        const potentialMap = {};
-        withIdx.forEach((e) => {
-            const n = state.nikkes.find((x) => x.id === e.nikkeId);
-            const gainPct = n ? getNikkeTotalGainPct(n) : 0;
-            potentialMap[e.origIdx] = e.damage && gainPct > 0 ? (gainPct / 100) * e.damage : 0;
+        // ── RECOMMENDATIONS VIEW: show all team-assigned Nikkes with their stats & recommendations ──
+        const teamEntries = raid.entries.filter((e) => e.team && e.team > 0);
+        const withIdx = teamEntries.map((e) => {
+            const origIdx = raid.entries.indexOf(e);
+            return { ...e, origIdx };
         });
 
-        const sorted =
-            dmgSortMode === "potential"
-                ? withIdx.sort((a, b) => (potentialMap[b.origIdx] || 0) - (potentialMap[a.origIdx] || 0))
-                : withIdx.sort((a, b) => (b.damage || 0) - (a.damage || 0));
-
-        const maxDmg = sorted.length ? Math.max(...sorted.map((e) => e.damage || 0), 1) : 1;
-
-        // Pre-compute potential gain (in M) for each entry to determine relative scale
-        const potentials = sorted.map((e) => {
+        // Pre-compute sortable values for each entry
+        const recData = withIdx.map((e) => {
             const n = state.nikkes.find((x) => x.id === e.nikkeId);
             const gainPct = n ? getNikkeTotalGainPct(n) : 0;
-            return e.damage && gainPct > 0 ? (gainPct / 100) * e.damage : 0;
-        });
-        const maxPotential = Math.max(...potentials, 0.001);
+            const potentialM = (e.damage && gainPct > 0) ? (gainPct / 100) * e.damage : 0;
 
-        const rows = sorted
+            // Rock Efficiency
+            let bestEff = 0;
+            let bestSlot = "";
+            if (n) {
+                const savedElementalBoss = state.elementalBoss;
+                if (raid.element && n.element !== raid.element) state.elementalBoss = false;
+                SLOTS.forEach((slot) => {
+                    const v = getVerdict(n, slot);
+                    if (!v || v.cls === "v-keep") return;
+                    let rocks = 0, dpsGain = 0;
+                    if (v.options) {
+                        const rec = v.options.find((o) => o.recommended) || v.options[0];
+                        rocks = rec.rocks;
+                        dpsGain = rec.dpsGain || 0;
+                    } else {
+                        rocks = v.rocks;
+                        dpsGain = v.dpsGain || 0;
+                    }
+                    if (rocks > 0 && dpsGain > 0) {
+                        const eff = dpsGain / rocks;
+                        if (eff > bestEff) { bestEff = eff; bestSlot = slot; }
+                    }
+                });
+                state.elementalBoss = savedElementalBoss;
+            }
+
+            return { ...e, n, gainPct, potentialM, bestEff, bestSlot };
+        });
+
+        // Sorting
+        const recSort = state.raidRecSort || "team";
+        const recSortAsc = state.raidRecSortAsc ?? false;
+        const dir = recSortAsc ? 1 : -1;
+        if (recSort === "damage") {
+            recData.sort((a, b) => dir * ((a.damage || 0) - (b.damage || 0)));
+        } else if (recSort === "potential") {
+            recData.sort((a, b) => dir * (a.potentialM - b.potentialM));
+        } else if (recSort === "rockeff") {
+            recData.sort((a, b) => dir * (a.bestEff - b.bestEff));
+        } else {
+            // Default: sort by team, then damage within team
+            recData.sort((a, b) => {
+                if (a.team !== b.team) return a.team - b.team;
+                return (b.damage || 0) - (a.damage || 0);
+            });
+        }
+
+        const maxDmg = recData.length ? Math.max(...recData.map((e) => e.damage || 0), 1) : 1;
+        const sortArrow = (col) => (recSort === col ? (recSortAsc ? " ▲" : " ▼") : "");
+
+        const rows = recData
             .map((e, rank) => {
-                const n = state.nikkes.find((x) => x.id === e.nikkeId);
-                const name = n ? n.name : "(removed)";
-                const elem = n && n.element ? elemIcon(n.element) : "";
-                const teamBadge = e.team
-                    ? `<span class="raid-team-badge">T${e.team}</span>`
-                    : '<span class="raid-team-badge" style="opacity:.3">—</span>';
+                const n = e.n;
+                if (!n) return "";
+                const name = n.name;
+                const elem = n.element ? elemIcon(n.element) : "";
+                const db = NIKKE_DB_MAP.get(n.name);
+                const teamBadge = `<span class="raid-team-badge">T${e.team}</span>`;
+
+                // Damage
+                const dmgDisplay = e.damage ? `${Number(e.damage).toLocaleString()}M` : "—";
                 const pct = maxDmg > 0 ? ((e.damage || 0) / maxDmg) * 100 : 0;
-                const barColor =
-                    pct >= 80 ? "#4ade80" : pct >= 50 ? "#60a5fa" : pct >= 25 ? "#fbbf24" : "#f87171";
-                // Potential damage gain if this nikke's overload gear is improved
-                const gainPct = n ? getNikkeTotalGainPct(n) : 0;
-                let gainCell;
-                let gainBar = "";
-                if (!e.damage || gainPct <= 0) {
-                    gainCell = '<span style="color:#475569">—</span>';
+                const dmgColor = !e.damage ? "#64748b" : pct >= 80 ? "#4ade80" : pct >= 50 ? "#60a5fa" : pct >= 25 ? "#fbbf24" : "#f87171";
+
+                // Potential
+                let potentialCell;
+                if (!e.damage || e.gainPct <= 0) {
+                    potentialCell = e.gainPct > 0 ? `<span style="color:#60a5fa">+${e.gainPct.toFixed(1)}%</span>` : '<span style="color:#475569">—</span>';
                 } else {
-                    const gainM = (gainPct / 100) * e.damage;
-                    const relPct = maxPotential > 0 ? (gainM / maxPotential) * 100 : 0;
-                    const gainColor =
-                        relPct >= 80
-                            ? "#4ade80"
-                            : relPct >= 50
-                              ? "#60a5fa"
-                              : relPct >= 25
-                                ? "#fbbf24"
-                                : "#f87171";
-                    gainCell = `<span style="color:${gainColor};font-weight:700" title="+${gainPct.toFixed(2)}% from improving overload gear">+${gainM.toFixed(1)}M</span> <span style="font-size:12px;color:${gainColor}">(+${gainPct.toFixed(1)}%)</span>`;
-                    gainBar = `<div class="raid-dmg-bar-bg"><div class="raid-dmg-bar" style="width:${relPct.toFixed(1)}%;background:${gainColor}"></div></div>`;
+                    potentialCell = `<span style="color:#4ade80;font-weight:600">+${e.potentialM.toFixed(1)}M</span> <span style="font-size:11px;color:#60a5fa">(+${e.gainPct.toFixed(1)}%)</span>`;
                 }
-                return `<tr class="rank-row">
+
+                // Rock Efficiency
+                let rockEffCell = '<span style="color:#475569">—</span>';
+                if (e.bestEff > 0) {
+                    const effColor = e.bestEff >= 1 ? "#4ade80" : e.bestEff >= 0.3 ? "#fbbf24" : "#f87171";
+                    rockEffCell = `<span style="color:${effColor};font-weight:600" title="Best slot: ${e.bestSlot}">${e.bestEff.toFixed(3)}%/rock</span>`;
+                }
+
+                // Skills recommendation
+                let skillsCell = '<span style="color:#475569">—</span>';
+                if (db && db.build && db.build.skill && db.build.skill.pve && db.build.skill.pve.rec) {
+                    const rec = db.build.skill.pve.rec;
+                    const cur = { s1: n.skill1 ?? 0, s2: n.skill2 ?? 0, s3: n.skill3 ?? 0 };
+                    const defs = [];
+                    [["s1", "S1"], ["s2", "S2"], ["s3", "S3"]].forEach(([k, lbl]) => {
+                        if (rec[k] != null && cur[k] < rec[k]) defs.push(`<span style="color:#f59e0b">${lbl} ${cur[k]}→${rec[k]}</span>`);
+                    });
+                    if (defs.length) {
+                        skillsCell = defs.join(" ");
+                    } else {
+                        skillsCell = '<span style="color:#4ade80">✓</span>';
+                    }
+                }
+
+                // Dolls recommendation
+                let dollCell = '<span style="color:#475569">—</span>';
+                if (db) {
+                    const isTreasure = TREASURE_NAMES.has(n.name);
+                    let recDoll, done;
+                    if (isTreasure) {
+                        recDoll = COLLECTION_DOLLS.find((d) => d.treasure === n.name);
+                        done = !!(n.doll && recDoll && n.doll.tid === recDoll.id);
+                    } else {
+                        recDoll = COLLECTION_DOLLS.find((d) => d.rarity === "SR" && d.weapon === db.weapon);
+                        const eq = n.doll ? COLLECTION_DOLLS.find((d) => d.id === n.doll.tid) : null;
+                        done = !!(eq && eq.rarity === "SR" && n.doll.lv === 15);
+                    }
+                    if (done) {
+                        dollCell = '<span style="color:#4ade80">✓</span>';
+                    } else if (recDoll) {
+                        const curLabel = n.doll ? (() => { const d = COLLECTION_DOLLS.find((x) => x.id === n.doll.tid); return d ? `[${d.rarity}] Lv${n.doll.lv ?? 0}` : "None"; })() : "None";
+                        const recLabel = isTreasure ? `[${recDoll.rarity}] ${recDoll.name}` : `[SR] Lv15`;
+                        dollCell = `<span style="color:#f59e0b" title="Current: ${curLabel}">${recLabel}</span>`;
+                    }
+                }
+
+                // Bond
+                let bondCell = '<span style="color:#475569">—</span>';
+                const bondMax = bondMaxFor(n);
+                if (bondMax != null) {
+                    const curBond = n.bond ?? 0;
+                    if (curBond >= bondMax) {
+                        bondCell = `<span style="color:#4ade80">✓ ${curBond}</span>`;
+                    } else {
+                        bondCell = `<span style="color:#f59e0b;font-weight:600">${curBond}<span style="color:#475569">/${bondMax}</span></span>`;
+                    }
+                }
+
+                return `<tr class="rank-row" onclick="goToGearNikke('${e.nikkeId}')" style="cursor:pointer" title="View in Gear Tracker">
         <td style="font-size:13px;color:#475569;width:24px">${rank + 1}</td>
-        <td style="font-size:15px;font-weight:500;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="goToGearNikke('${e.nikkeId}')" title="View in Gear Tracker">${n ? nikkeIcon(name, 30) : ""}${elem}${name}</td>
         <td style="width:36px;text-align:center">${teamBadge}</td>
-        <td style="width:130px"><div style="display:flex;align-items:center;gap:3px">
-          <input class="prio-count-input" type="text" inputmode="decimal" value="${e.damage || ""}" placeholder="0"
-data-raid-dmg="${raid.id}-${e.origIdx}"
-onfocus="this.select()"
-onblur="raidDmgOnBlur('${raid.id}',${e.origIdx},this.value)"
-onkeydown="raidDmgKeydown(event,'${raid.id}',${e.origIdx})"
-style="text-align:right;width:100%;font-size:16px;font-weight:700"/>
-          <span style="font-size:13px;color:#475569">M</span>
-        </div></td>
-        <td style="width:100px"><div class="raid-dmg-bar-bg"><div class="raid-dmg-bar" style="width:${pct.toFixed(1)}%;background:${barColor}"></div></div></td>
-        <td style="width:120px;text-align:right;font-size:14px">${gainCell}</td>
-        <td style="width:80px">${gainBar}</td>
-        <td style="width:26px"><button class="small-del-btn" onclick="removeRaidEntry('${raid.id}',${e.origIdx})" title="Remove">✕</button></td>
+        <td style="font-weight:500"><div style="display:flex;align-items:center;gap:6px">${nikkeIcon(name, 28)}${elem}<span>${name}</span></div></td>
+        <td style="color:${dmgColor};font-weight:600;text-align:right">${dmgDisplay}</td>
+        <td style="text-align:right">${potentialCell}</td>
+        <td style="text-align:right">${rockEffCell}</td>
+        <td style="text-align:center">${skillsCell}</td>
+        <td style="text-align:center">${dollCell}</td>
+        <td style="text-align:center">${bondCell}</td>
       </tr>`;
             })
             .join("");
 
-        bodyHtml = `
+        if (recData.length) {
+            bodyHtml = `
+      <div class="info-note" style="margin-bottom:10px">Showing recommendations for all Nikkes assigned to teams. Click a row to open in Gear Tracker.</div>
       <table class="attr-table" style="width:100%">
-        <tr><th>#</th><th>Nikke</th><th>Tm</th><th class="sort-header" style="text-align:left" onclick="setRaidDmgSort('damage')">Damage${dmgSortMode === "damage" ? " ▼" : ""}</th><th></th><th class="sort-header" style="text-align:left" onclick="setRaidDmgSort('potential')">Potential${dmgSortMode === "potential" ? " ▼" : ""}</th><th></th><th></th></tr>
+        <tr><th>#</th><th>Tm</th><th>Nikke</th><th class="sort-header" style="text-align:right" onclick="setRaidRecSort('damage')">Damage${sortArrow("damage")}</th><th class="sort-header" style="text-align:right" onclick="setRaidRecSort('potential')">Potential${sortArrow("potential")}</th><th class="sort-header" style="text-align:right" onclick="setRaidRecSort('rockeff')">Rock Eff${sortArrow("rockeff")}</th><th style="text-align:center">Skills</th><th style="text-align:center">Dolls</th><th style="text-align:center">Bond</th></tr>
         ${rows}
       </table>`;
+        } else {
+            bodyHtml = `<div class="info-note">No Nikkes assigned to teams yet. Switch to Teams view to add Nikkes to team slots.</div>`;
+        }
     }
 
     area.innerHTML = `
@@ -334,18 +403,7 @@ style="text-align:right;width:100%;font-size:16px;font-weight:700"/>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       ${viewToggle}
     </div>
-    ${bodyHtml}
-    ${
-        viewMode === "damage" && available.length
-? `
-      <div style="display:flex;gap:6px;margin-top:10px;align-items:center">
-        <select id="raid-add-nikke" class="form-input" style="flex:1;font-size:14px;padding:4px 6px">
-          <option value="">— add nikke —</option>${nikkeOpts}
-        </select>
-        <button class="btn btn-primary" onclick="addRaidEntry('${raid.id}')" style="font-size:13px;padding:4px 10px">Add</button>
-      </div>`
-: ""
-    }`;
+    ${bodyHtml}`;
 
     // No more drag-and-drop setup needed
 }
@@ -398,6 +456,17 @@ function setRaidSort2(mode) {
 
 function setRaidDmgSort(mode) {
     state.raidDmgSortMode = mode;
+    const raid = state.raids.find((r) => r.id === state.selRaidEdit);
+    if (raid) renderRaidMain(raid);
+}
+
+function setRaidRecSort(col) {
+    if (state.raidRecSort === col) {
+        state.raidRecSortAsc = !state.raidRecSortAsc;
+    } else {
+        state.raidRecSort = col;
+        state.raidRecSortAsc = false; // default descending
+    }
     const raid = state.raids.find((r) => r.id === state.selRaidEdit);
     if (raid) renderRaidMain(raid);
 }
