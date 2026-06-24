@@ -262,8 +262,8 @@ function load() {
     // Default to latest raid (last in array = displayed first in sidebar)
     state.selRaid = state.raids.length ? state.raids[state.raids.length - 1].id : null;
     state.selRaidEdit = state.raids.length ? state.raids[state.raids.length - 1].id : null;
-    // Always default Solo Raids view to Damage on reload
-    state.raidViewMode = "damage";
+    // Always default Solo Raids view to Recommendations on reload
+    state.raidViewMode = "recommend";
     // Save to localStorage only (auth listener handles cloud sync)
     try {
         localStorage.setItem("nikke_v8", JSON.stringify(state));

@@ -182,6 +182,9 @@ function clearAllData() {
         gearSidebarSort: "power",
         gearSidebarSortDir: "desc",
     };
+    // Clear independent selection keys so stale IDs don't persist
+    try { localStorage.removeItem("nikke_selGear"); } catch(e) {}
+    try { localStorage.removeItem("nikke_selPrio"); } catch(e) {}
     save();
     render();
     dismissMyData();

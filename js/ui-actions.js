@@ -23,8 +23,14 @@ function hideDeleteConfirm(id) {
 function doDelete(id) {
     const deleted = state.nikkes.find((n) => n.id === id);
     state.nikkes = state.nikkes.filter((n) => n.id !== id);
-    if (state.selGear === id) state.selGear = null;
-    if (state.selPrio === id) state.selPrio = null;
+    if (state.selGear === id) {
+        state.selGear = null;
+        try { localStorage.removeItem("nikke_selGear"); } catch(e) {}
+    }
+    if (state.selPrio === id) {
+        state.selPrio = null;
+        try { localStorage.removeItem("nikke_selPrio"); } catch(e) {}
+    }
     // Clean up custom weapon mapping if it was a custom nikke
     if (deleted && state.customWeapons && state.customWeapons[deleted.name]) {
         delete state.customWeapons[deleted.name];

@@ -374,6 +374,7 @@ function getVerdict(nikke, slot) {
     });
     // Compute DPS-weighted gain (best single stat you could land, weighted)
     const emptyDpsGain = goodPrios.reduce((best, p) => {
+      if (p.line === 'Elemental Dmg' && !state.elementalBoss) return best;
       const ev = expectedValAnyTier(p.line);
       const w = getStatDmgWeight(p.line, nikke.name, nikke) || 0.01;
       return Math.max(best, ev * w);

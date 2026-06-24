@@ -219,15 +219,18 @@ function renderRaidMain(raid) {
         // Pre-compute sortable values for each entry
         const recData = withIdx.map((e) => {
             const n = state.nikkes.find((x) => x.id === e.nikkeId);
+
+            // Temporarily adjust elemental boss setting for this raid's element
+            const savedElementalBoss = state.elementalBoss;
+            if (n && raid.element && n.element !== raid.element) state.elementalBoss = false;
+
             const gainPct = n ? getNikkeTotalGainPct(n) : 0;
             const potentialM = (e.damage && gainPct > 0) ? (gainPct / 100) * e.damage : 0;
 
-            // Rock Efficiency
+            // Rock Efficiency (damage per rock)
             let bestEff = 0;
             let bestSlot = "";
-            if (n) {
-                const savedElementalBoss = state.elementalBoss;
-                if (raid.element && n.element !== raid.element) state.elementalBoss = false;
+            if (n && e.damage) {
                 SLOTS.forEach((slot) => {
                     const v = getVerdict(n, slot);
                     if (!v || v.cls === "v-keep") return;
@@ -241,12 +244,12 @@ function renderRaidMain(raid) {
                         dpsGain = v.dpsGain || 0;
                     }
                     if (rocks > 0 && dpsGain > 0) {
-                        const eff = dpsGain / rocks;
+                        const eff = (dpsGain / 100) * e.damage / rocks;
                         if (eff > bestEff) { bestEff = eff; bestSlot = slot; }
                     }
                 });
-                state.elementalBoss = savedElementalBoss;
             }
+            state.elementalBoss = savedElementalBoss;
 
             return { ...e, n, gainPct, potentialM, bestEff, bestSlot };
         });
@@ -298,7 +301,7 @@ function renderRaidMain(raid) {
                 let rockEffCell = '<span style="color:#475569">—</span>';
                 if (e.bestEff > 0) {
                     const effColor = e.bestEff >= 1 ? "#4ade80" : e.bestEff >= 0.3 ? "#fbbf24" : "#f87171";
-                    rockEffCell = `<span style="color:${effColor};font-weight:600" title="Best slot: ${e.bestSlot}">${e.bestEff.toFixed(3)}%/rock</span>`;
+                    rockEffCell = `<span style="color:${effColor};font-weight:600" title="Best slot: ${e.bestSlot}">${e.bestEff.toFixed(2)}M/rock</span>`;
                 }
 
                 // Skills recommendation
