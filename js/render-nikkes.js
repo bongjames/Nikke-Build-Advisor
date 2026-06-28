@@ -287,42 +287,77 @@ function renderGearMain(nikke) {
     const area = document.getElementById("gear-main");
     const totals = attrTotals(nikke);
 
-    // Attribute totals table
+    // Attribute totals — every substat currently on gear (plus any prioritised line); nothing filtered out
     const trackedStats = [
         ...new Set([...Object.keys(totals), ...nikke.priorities.filter((p) => p.line).map((p) => p.line)]),
-    ].filter((s) => !ALWAYS_TRASH.has(s));
+    ];
 
-    const attrRows = trackedStats
+    // Order: ideal → passable → trash/unset, then alphabetical within each group
+    const attrRole = (s) => {
+        const c = classifyLine(s, nikke);
+        return c === "ideal" ? 0 : c === "passable" ? 1 : 2;
+    };
+    const sortedStats = trackedStats
+        .slice()
+        .sort((a, b) => attrRole(a) - attrRole(b) || a.localeCompare(b));
+
+    const attrRows = sortedStats
         .map((stat) => {
+            const cls = classifyLine(stat, nikke);
+            const statCls = cls === "ideal" ? "is-ideal" : cls === "passable" ? "is-passable" : "is-trash";
             const tot = totals[stat] || 0;
-            const min = minTotalVal(nikke, stat);
-            const met = min === null ? null : tot >= min;
-            const metTxt =
-                min === null
-                    ? `<span class="no-min">No minimum</span>`
-                    : met
-                      ? `<span class="met">✓ Met (min ${min.toFixed(2)}%)</span>`
-                      : `<span class="unmet">✗ Need ${(min - tot).toFixed(2)}% more</span>`;
-            const prio = nikke.priorities.find((p) => p.line === stat);
+            // Lines column = how many lines for this stat are currently on the nikke's gear
+            const lineCount = SLOTS.reduce(
+                (n, s) => n + nikke.gear[s].lines.filter((l) => l.stat === stat && l.val).length,
+                0,
+            );
+            // Match the priority the same way classifyLine does (handles stat-name
+            // aliases like "Elemental Damage" vs "Elemental Dmg")
+            const prio = nikke.priorities.find((p) => normStat(p.line) === normStat(stat));
+            // Target's line count comes from the Line Priorities tab (count), not current gear
+            const prioCount = prio ? parseInt(prio.count) || 1 : 0;
             const tgtTier = prio ? parseInt(prio.targetTier) || 11 : 11;
             const tgtVal = TIER_TABLE[stat] ? TIER_TABLE[stat][tgtTier - 1] : null;
-            return `<tr>
-      <td style="font-weight:600;color:#f1f5f9">${stat}</td>
-      <td>${tot > 0 ? tot.toFixed(2) + (IS_PCT.has(stat) ? "%" : "") : "—"}</td>
-      <td>T${tgtTier}${tgtVal ? " (≥" + tgtVal + "%)" : ""}</td>
-      <td>${metTxt}</td>
-    </tr>`;
+            const unit = IS_PCT.has(stat) ? "%" : "";
+            // Target = priority line count × value at target tier; "—" only when no priority entry
+            const tgtTotal = prio && tgtVal !== null ? prioCount * tgtVal : null;
+
+            // Status = Target − current. Not a line priority → Trash (red);
+            // below target → remaining gap (yellow); at/above target → green ✓
+            let statusCell, totState;
+            if (!prio) {
+                statusCell = `<span class="at-pill at-pill-trash">Trash</span>`;
+                totState = tot > 0 ? "is-trash" : "is-zero";
+            } else if (tgtTotal !== null && tot >= tgtTotal) {
+                statusCell = `<span class="at-pill at-pill-met">✓ Met</span>`;
+                totState = "is-met";
+            } else {
+                const gap = (tgtTotal !== null ? tgtTotal : 0) - tot;
+                statusCell = `<span class="at-pill at-pill-below">↓ ${gap.toFixed(2)}${unit}</span>`;
+                totState = tot > 0 ? "is-below" : "is-zero";
+            }
+            const totCls = "at-num at-total " + totState;
+            return `<div class="at-row">
+      <span class="at-stat ${statCls}">${stat}</span>
+      <span class="at-num">${lineCount || "—"}</span>
+      <span class="${totCls}">${tot > 0 ? tot.toFixed(2) + unit : "—"}</span>
+      <span class="at-num at-goal" title="${tgtTotal !== null ? prioCount + " priority line(s) × T" + tgtTier + " value (" + tgtVal + "%)" : "No line priority set for this stat"}">${tgtTotal !== null ? tgtTotal.toFixed(2) + unit : "—"}</span>
+      <span class="at-status">${statusCell}</span>
+    </div>`;
         })
         .join("");
 
     const attrTable = trackedStats.length
         ? `
     <div class="attr-summary">
-      <div class="attr-summary-title">Attribute totals</div>
-      <table class="attr-table">
-        <thead><tr><th>Stat</th><th>Total</th><th>Target Tier</th><th>Minimum</th></tr></thead>
-        <tbody>${attrRows}</tbody>
-      </table>
+      <div class="at-head">
+        <span class="attr-summary-title">Attribute totals</span>
+        <span class="at-badge">summed across all 4 pieces</span>
+      </div>
+      <div class="at-colhead">
+        <span>Stat</span><span>Lines</span><span>Total</span><span>Target</span><span>Status</span>
+      </div>
+      ${attrRows}
     </div>`
         : "";
 
