@@ -85,7 +85,7 @@ function renderWishlist() {
                       })
                       .join("");
         return `
-            <div style="flex:1 1 380px;min-width:0;background:#151c2b;border:1px solid #1e2535;border-radius:10px;padding:0.9rem">
+            <div style="flex:1 1 380px;min-width:0;background:#0f1320;border:1px solid #1e2535;border-radius:10px;padding:0.9rem">
                 <div style="font-size:15px;font-weight:600;color:#f1f5f9;margin-bottom:.6rem;padding-bottom:.45rem;border-bottom:1px solid #1e2535">${mfr}</div>
                 <table class="attr-table" style="width:100%;table-layout:fixed;min-width:0">
                     <colgroup>

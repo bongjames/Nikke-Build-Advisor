@@ -10,6 +10,16 @@ function refreshGearPrio() {
     renderOverview();
 }
 
+function prioStepperHtml(nid, i, value, min, max, stepFn, changeFn) {
+    const minDis = value <= min ? " disabled" : "";
+    const maxDis = value >= max ? " disabled" : "";
+    return `<div class="stepper">
+<button type="button" class="stepper-btn" tabindex="-1" onmousedown="event.preventDefault()" onclick="${stepFn}('${nid}',${i},-1)"${minDis}>−</button>
+<input class="stepper-input" type="number" inputmode="numeric" min="${min}" max="${max}" step="1" value="${value}" onchange="${changeFn}('${nid}',${i},this.value)"/>
+<button type="button" class="stepper-btn" tabindex="-1" onmousedown="event.preventDefault()" onclick="${stepFn}('${nid}',${i},1)"${maxDis}>+</button>
+</div>`;
+}
+
 // Build the inner HTML of the Priorities sub-tab for a single Nikke.
 // No header — the Nikke detail panel already shows the name/meta above.
 function renderPrioContent(nikke) {
@@ -23,25 +33,29 @@ function renderPrioContent(nikke) {
             ).join("");
             const count = parseInt(p.count) || 1;
             const targetTier = parseInt(p.targetTier) || 11;
-            const tTierOpts = Array.from({ length: 15 }, (_, k) => k + 1)
-                .map((t) => `<option value="${t}" ${targetTier === t ? "selected" : ""}>T${t}</option>`)
-                .join("");
             const tgtVal = p.line && TIER_TABLE[p.line] ? TIER_TABLE[p.line][targetTier - 1] : null;
             const prob = probHitTargetTier(targetTier);
             const expRolls = Math.round(1 / prob);
             return `<div class="prio-card">
-      <div class="prio-col-labels">
-        <span class="prio-col-label">Stat</span>
-        <span class="prio-col-label">Priority</span>
-        <span class="prio-col-label">Count</span>
-        <span class="prio-col-label">Target Tier</span>
-        <span></span>
-      </div>
-      <div class="prio-row">
-        <select onchange="updatePrioLine('${nikke.id}',${i},this.value)"><option value="">— select —</option>${statOpts}</select>
-        <select onchange="updatePrioTier('${nikke.id}',${i},this.value)">${tierOpts}</select>
-        <input class="prio-count-input" type="number" min="1" max="4" value="${count}" onchange="updatePrioCount('${nikke.id}',${i},this.value)" title="How many of this line across all 4 gear pieces"/>
-        <select class="tier-target-select" onchange="updatePrioTargetTier('${nikke.id}',${i},this.value)">${tTierOpts}</select>
+      <div class="prio-inner">
+        <div class="prio-fields">
+          <div class="prio-field">
+            <span class="prio-col-label">Stat</span>
+            <select onchange="updatePrioLine('${nikke.id}',${i},this.value)"><option value="">— select —</option>${statOpts}</select>
+          </div>
+          <div class="prio-field">
+            <span class="prio-col-label">Priority</span>
+            <select onchange="updatePrioTier('${nikke.id}',${i},this.value)">${tierOpts}</select>
+          </div>
+          <div class="prio-field">
+            <span class="prio-col-label">Count</span>
+            ${prioStepperHtml(nikke.id, i, count, 1, 4, "stepPrioCount", "updatePrioCount")}
+          </div>
+          <div class="prio-field">
+            <span class="prio-col-label">Target Tier</span>
+            ${prioStepperHtml(nikke.id, i, targetTier, 1, 15, "stepPrioTargetTier", "updatePrioTargetTier")}
+          </div>
+        </div>
         <button class="small-del-btn" onclick="delPrio('${nikke.id}',${i})" title="Remove">✕</button>
       </div>
     </div>`;
@@ -49,18 +63,10 @@ function renderPrioContent(nikke) {
         .join("");
 
     return `
-    <div class="info-note" style="margin-bottom:10px">
-      Set how many of each line you need (Count) and your minimum acceptable value tier (Target Tier, default T10).
-      Passable lines are always sacrificeable when Change Effects is needed.
-    </div>
     ${rows}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="add-line-btn" onclick="addPrio('${nikke.id}')">+ Add line</button>
       <button class="add-line-btn" onclick="loadDbPriorities('${nikke.id}')" title="Populate from database overload recommendations">↺ Load from database</button>
-    </div>
-    <div class="info-note" style="margin-top:10px">
-      DEF is always trash. Recommended reroll order: Line 3 (30%) → Line 2 (50%) → Line 1 (100% — last).
-      No duplicate stats can appear on the same gear piece.
     </div>`;
 }
 
@@ -82,9 +88,21 @@ function updatePrioCount(nid, i, v) {
     save();
     refreshGearPrio();
 }
+function stepPrioCount(nid, i, delta) {
+    const n = state.nikkes.find((x) => x.id === nid);
+    n.priorities[i].count = Math.min(4, Math.max(1, (parseInt(n.priorities[i].count) || 1) + delta));
+    save();
+    refreshGearPrio();
+}
 function updatePrioTargetTier(nid, i, v) {
     const n = state.nikkes.find((x) => x.id === nid);
-    n.priorities[i].targetTier = parseInt(v) || 11;
+    n.priorities[i].targetTier = Math.min(15, Math.max(1, parseInt(v) || 11));
+    save();
+    refreshGearPrio();
+}
+function stepPrioTargetTier(nid, i, delta) {
+    const n = state.nikkes.find((x) => x.id === nid);
+    n.priorities[i].targetTier = Math.min(15, Math.max(1, (parseInt(n.priorities[i].targetTier) || 11) + delta));
     save();
     refreshGearPrio();
 }

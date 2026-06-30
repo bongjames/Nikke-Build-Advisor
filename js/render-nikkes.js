@@ -623,8 +623,8 @@ ${tierOpts}
           </div></label>
         <label style="display:flex;flex-direction:column;gap:3px"><span style="${fieldLabelCss}">Doll</span>
           <div style="display:flex;gap:4px">
-<select style="${fieldInputCss};flex:1${dollRarityColor ? `;color:${dollRarityColor}` : ""}" onchange="updateNikkeDoll('${nikke.id}',this.value)"><option value="">None</option>${dollOpts}</select>
-${nikke.doll && !isTreasureDoll ? statStepperHtml(nikke.id, "doll", nikke.doll.lv, 0, 15, true, "flex:1", undefined, dollLevelColor) : ""}
+<select style="${fieldInputCss};width:0;flex:1 1 0;min-width:0${dollRarityColor ? `;color:${dollRarityColor}` : ""}" onchange="updateNikkeDoll('${nikke.id}',this.value)"><option value="">None</option>${dollOpts}</select>
+${nikke.doll && !isTreasureDoll ? statStepperHtml(nikke.id, "doll", nikke.doll.lv, 0, 15, true, "flex:1 1 0;min-width:0", undefined, dollLevelColor) : ""}
           </div></label>
       </div>
     </div>`;
